@@ -524,9 +524,12 @@ def _distribute_students(school, students, buses):
     Pour chaque élève (ordre stable), le bus retenu est le plus proche de son
     domicile disposant encore d'une place : la distance est mesurée aux points
     de passage habituels du bus (arrêts + géométrie de sa feuille de route),
-    sinon à l'école (bus sans feuille de route — premier démarrage). Les
-    égalités sont départagées par l'ordre des bus (code_bus) : le résultat est
-    déterministe.
+    sinon à l'école (bus sans feuille de route — premier démarrage).
+
+    Pour éviter qu'un seul bus absorbe tous les élèves (tous les bus au même
+    point de départ = même distance), un malus de charge est appliqué :
+    distance_effective = distance × (1 + 0.5 × taux_remplissage). Ainsi,
+    un bus déjà chargé est « repoussé » au profit d'un bus plus vide.
 
     Retourne {bus.pk: [élèves]} — les élèves restés sans bus (capacité totale
     insuffisante) n'apparaissent dans aucun groupe.
@@ -536,7 +539,8 @@ def _distribute_students(school, students, buses):
     for student in students:
         best_bus, best_distance = None, None
         for bus in buses:
-            if len(groups[bus.pk]) >= bus.capacity:
+            loaded = len(groups[bus.pk])
+            if loaded >= bus.capacity:
                 continue  # bus complet : capacité maximale atteinte
             route = bus.routes.order_by("-created_at").first()
             distance = _student_to_route_distance(student, route)
@@ -545,8 +549,14 @@ def _distribute_students(school, students, buses):
                 distance = haversine_km(
                     student.latitude, student.longitude, *depot
                 )
-            if best_distance is None or distance < best_distance:
-                best_bus, best_distance = bus, distance
+            # Malus de charge : favorise les bus moins remplis.
+            # Sans route, tous les bus sont au meme point (ecole) : sans malus,
+            # le premier bus absorberait tous les eleves. Le facteur 2.0 suffit
+            # pour repartir de facon equilibree des le premier demarrage.
+            fill_ratio = loaded / bus.capacity
+            effective_distance = distance * (1 + 2.0 * fill_ratio)
+            if best_distance is None or effective_distance < best_distance:
+                best_bus, best_distance = bus, effective_distance
         if best_bus is not None:
             groups[best_bus.pk].append(student)
     return groups
