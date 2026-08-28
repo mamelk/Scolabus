@@ -698,9 +698,10 @@
         // Les marqueurs sont conservés par id : le rafraîchissement temps réel
         // les déplace, en ajoute (chauffeur connecté) ou en retire (déconnecté).
         const busMarkers = {};
+        const routeColors = ['#e74c3c', '#2980b9', '#27ae60', '#f39c12', '#8e44ad', '#16a085', '#c0392b', '#2c3e50'];
         const busColors = {};  // id bus → couleur de l'itinéraire
         (data.routes || []).forEach((route, i) => {
-            const color = colors[i % colors.length];
+            const color = routeColors[i % routeColors.length];
             // Associer la couleur au bus via le nom du bus dans la route
             (data.buses || []).forEach(b => {
                 if (route.bus === b.code_bus) busColors[b.id] = color;
@@ -806,9 +807,8 @@
 
         // Trajets : boucle fermée École → arrêts → École
         // Géométrie routière réelle (OSRM) si disponible, sinon repli sur lignes droites.
-        const colors = ['#e74c3c', '#2980b9', '#27ae60', '#f39c12', '#8e44ad', '#16a085', '#c0392b', '#2c3e50'];
         data.routes.forEach((route, i) => {
-            const color = colors[i % colors.length];
+            const color = routeColors[i % routeColors.length];
             const stops = route.stops.map(st => [st.latitude, st.longitude]);
             const straightLoop = data.school
                 ? [[data.school.latitude, data.school.longitude], ...stops, [data.school.latitude, data.school.longitude]]
