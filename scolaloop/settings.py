@@ -142,9 +142,11 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # WhiteNoise : sert les fichiers statiques en production (DEBUG=False)
 STORAGES = {
     'staticfiles': {
-        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+        'BACKEND': 'whitenoise.storage.StaticFilesStorage',
     },
 }
+
+
 
 
 # Service de routage routier OSRM (géométrie réelle des trajets de bus)
