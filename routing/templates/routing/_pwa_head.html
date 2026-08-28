@@ -1,0 +1,19 @@
+{% load static %}
+<!-- ===== PWA : manifest + Service Worker (hors-ligne & très bas débit) ===== -->
+<link rel="manifest" href="{% static 'manifest.json' %}">
+<meta name="theme-color" content="#0f172a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="{% static 'images/logo.svg' %}">
+<script>
+    // Enregistrement du Service Worker à la racine (/sw.js) : sa portée "/"
+    // couvre toutes les pages (accueil, chauffeur, parent, école).
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+            navigator.serviceWorker.register('{% url 'routing:service_worker' %}', { scope: '/' })
+                .catch(function (err) {
+                    console.warn('[PWA] Enregistrement du Service Worker impossible :', err);
+                });
+        });
+    }
+</script>

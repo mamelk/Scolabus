@@ -1,0 +1,196 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Replay GPS — {{ bus.code_bus }} · Scolaloop</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/logo.svg' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root { --indigo: #4F46E5; --blue: #2563EB; --border: #e2e8f0; --muted: #64748b; --slate: #0f172a; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #eef2ff 0%, #dbeafe 55%, #e0e7ff 100%);
+            min-height: 100vh; padding: 1.5rem 1rem;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        header {
+            background: linear-gradient(135deg, var(--indigo), var(--blue)); color: white;
+            border-radius: 18px; padding: 1.2rem 1.5rem; margin-bottom: 1rem;
+            display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+        }
+        header .logo img { height: 2.2rem; }
+        header h1 { font-size: 1.15rem; font-weight: 800; }
+        header .sub { font-size: 0.82rem; opacity: 0.92; }
+        .btn {
+            display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1rem;
+            border-radius: 10px; font-size: 0.85rem; font-weight: 600; text-decoration: none;
+            background: rgba(255,255,255,0.15); color: white; border: none; cursor: pointer; font-family: inherit;
+        }
+        .btn:hover { background: rgba(255,255,255,0.25); }
+        .card {
+            background: white; border-radius: 16px; padding: 1.1rem 1.3rem;
+            box-shadow: 0 10px 30px rgba(79, 70, 229, 0.12); border: 1px solid rgba(226,232,240,0.8);
+            margin-bottom: 1rem;
+        }
+        .controls { display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap; }
+        .controls label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--muted); margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .controls select, .controls input[type="date"] {
+            padding: 0.55rem 0.7rem; border: 1.5px solid var(--border); border-radius: 10px;
+            font-size: 0.88rem; font-family: inherit; background: #fbfdff;
+        }
+        .controls select:focus, .controls input[type="date"]:focus { outline: none; border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(79,70,229,0.12); }
+        #map { height: 430px; border-radius: 14px; border: 1.5px solid var(--border); z-index: 0; }
+        .play-row { display: flex; align-items: center; gap: 0.9rem; margin-top: 0.9rem; }
+        .play-btn {
+            width: 48px; height: 48px; border-radius: 50%; border: none; cursor: pointer;
+            background: linear-gradient(135deg, var(--indigo), var(--blue)); color: white; font-size: 1.1rem;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35); flex-shrink: 0;
+        }
+        .play-btn:active { transform: scale(0.95); }
+        input[type="range"] { flex: 1; accent-color: var(--indigo); height: 6px; cursor: pointer; }
+        .info { display: flex; gap: 1.2rem; flex-wrap: wrap; margin-top: 0.8rem; }
+        .info .item { flex: 1; min-width: 120px; background: #f8fafc; border-radius: 12px; padding: 0.6rem 0.9rem; text-align: center; }
+        .info .item .v { font-size: 1.15rem; font-weight: 800; color: var(--slate); }
+        .info .item .k { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .empty { text-align: center; padding: 2rem; color: var(--muted); }
+        .empty i { font-size: 2rem; display: block; margin-bottom: 0.5rem; opacity: 0.5; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div style="display:flex; align-items:center; gap:0.9rem;">
+                <span class="logo"><img src="{% static 'images/logo.svg' %}" alt="Scolaloop Logo"></span>
+                <div>
+                    <h1>Replay GPS — {{ bus.code_bus }}</h1>
+                    <div class="sub">Rejouez pas à pas le trajet parcouru par le bus sur la carte.</div>
+                </div>
+            </div>
+            <a class="btn" href="{% url 'routing:dashboard' %}"><i class="fa-solid fa-arrow-left"></i> Tableau de bord</a>
+        </header>
+
+        <div class="card">
+            <div class="controls">
+                <div>
+                    <label for="replay-date">Date</label>
+                    <input type="date" id="replay-date" value="{{ selected_date }}" onchange="changeDate()">
+                </div>
+                <div>
+                    <label for="replay-speed-select">Vitesse de lecture</label>
+                    <select id="replay-speed-select">
+                        <option value="300">Lente</option>
+                        <option value="150" selected>Normale</option>
+                        <option value="60">Rapide</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            {% if points %}
+            <div id="map"></div>
+            <div class="play-row">
+                <button class="play-btn" id="play-btn" title="Lecture / Pause"><i class="fa-solid fa-play"></i></button>
+                <input type="range" id="slider" min="0" max="{{ points|length|add:'-1' }}" value="0" step="1">
+            </div>
+            <div class="info">
+                <div class="item"><div class="v" id="info-time">—</div><div class="k">Heure</div></div>
+                <div class="item"><div class="v" id="info-speed">—</div><div class="k">Vitesse (km/h)</div></div>
+                <div class="item"><div class="v" id="info-step">0 / {{ points|length }}</div><div class="k">Points GPS</div></div>
+            </div>
+            {% else %}
+            <div class="empty">
+                <i class="fa-solid fa-route"></i>
+                Aucun point GPS enregistré{% if selected_date %} pour cette date{% endif %}.<br>
+                Le chauffeur doit d'abord activer le suivi GPS.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script id="points-data" type="application/json">{{ points_json|safe }}</script>
+    {% if points %}
+    <script>
+        const points = JSON.parse(document.getElementById('points-data').textContent);
+        const slider = document.getElementById('slider');
+        const playBtn = document.getElementById('play-btn');
+        const speedSel = document.getElementById('replay-speed-select');
+        const infoTime = document.getElementById('info-time');
+        const infoSpeed = document.getElementById('info-speed');
+        const infoStep = document.getElementById('info-step');
+
+        const busIcon = L.divIcon({
+            className: '',
+            html: '<div style="display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:#f1c40f;border:3px solid white;box-shadow:0 4px 12px rgba(0,0,0,0.35);font-size:18px;">🚌</div>',
+            iconSize: [38, 38], iconAnchor: [19, 19]
+        });
+
+        // Centre sur la première position connue.
+        const map = L.map('map').setView([points[0].lat, points[0].lng], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19, attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        let marker = null;
+        let trail = null;
+
+        function renderStep(idx) {
+            const p = points[idx];
+            if (!marker) {
+                marker = L.marker([p.lat, p.lng], { icon: busIcon }).addTo(map);
+                trail = L.polyline([], { color: '#4F46E5', weight: 4, opacity: 0.85 }).addTo(map);
+            }
+            marker.setLatLng([p.lat, p.lng]);
+            trail.setLatLngs(points.slice(0, idx + 1).map(q => [q.lat, q.lng]));
+            infoTime.textContent = p.time;
+            infoSpeed.textContent = p.speed ? p.speed.toFixed(0) : '—';
+            infoStep.textContent = `${idx + 1} / ${points.length}`;
+        }
+
+        slider.addEventListener('input', () => {
+            stop();
+            renderStep(parseInt(slider.value, 10));
+        });
+
+        let timer = null;
+        function stop() {
+            clearInterval(timer);
+            timer = null;
+            playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+        }
+        function play() {
+            if (timer) { stop(); return; }
+            const stepMs = parseInt(speedSel.value, 10);
+            timer = setInterval(() => {
+                let next = parseInt(slider.value, 10) + 1;
+                if (next >= points.length) { stop(); return; }
+                slider.value = next;
+                renderStep(next);
+            }, stepMs);
+            playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+        }
+        playBtn.addEventListener('click', () => {
+            if (timer) stop();
+            else {
+                if (parseInt(slider.value, 10) >= points.length - 1) { slider.value = 0; }
+                play();
+            }
+        });
+
+        // Recharger la page avec la date choisie.
+        function changeDate() {
+            const d = document.getElementById('replay-date').value;
+            if (d) window.location.href = `?date=${d}`;
+        }
+
+        renderStep(0);
+        map.fitBounds(L.latLngBounds(points.map(p => [p.lat, p.lng])).pad(0.15));
+    </script>
+    {% endif %}
+</body>
+</html>

@@ -1,0 +1,350 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Suivi — {{ student.prenom }}</title>
+    {% include 'routing/_pwa_head.html' %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/logo.svg' %}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-polylinedecorator/1.6.0/leaflet.polylineDecorator.min.js"></script>
+    <!-- Tailwind CSS (CDN) — preflight désactivé pour préserver les styles existants -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { corePlugins: { preflight: false } };</script>
+    <style>
+        :root { --blue: #2563eb; --green: #22c55e; --orange: #f59e0b; --red: #ef4444; }
+        .h-10 { height: 2.5rem; }
+        .w-auto { width: auto; }
+        .logo-white { filter: brightness(0) invert(1); }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f1f5f9; color: #0f172a; min-height: 100vh; }
+        header {
+            background: linear-gradient(135deg, #2563eb, #1e40af); color: white;
+            padding: 1rem 1.2rem; display: flex; justify-content: space-between; align-items: center; gap: 0.8rem;
+        }
+        header h1 { font-size: 1.15rem; font-weight: 700; }
+        header .sub { font-size: 0.85rem; opacity: 0.9; }
+        header a { color: #fecaca; text-decoration: none; font-size: 0.85rem; }
+        .badge {
+            padding: 0.5rem 0.9rem; border-radius: 999px; font-size: 0.85rem; font-weight: 700;
+            white-space: nowrap; border: 2px solid white;
+        }
+        .badge.waiting { background: var(--blue); }
+        .badge.approach { background: var(--orange); }
+        .badge.taken { background: var(--green); }
+        .alert-banner {
+            background: var(--red); color: white; text-align: center;
+            padding: 0.9rem 1rem; font-size: 1.02rem; font-weight: 800; letter-spacing: 0.02em;
+            animation: blink 1s steps(2, start) infinite;
+        }
+        .hidden { display: none !important; }
+        @keyframes blink { 50% { opacity: 0.35; } }
+        .distance-card {
+            background: white; margin: 1rem 1.2rem; border-radius: 16px; text-align: center;
+            padding: 1.2rem; box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .distance-label { font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; }
+        .distance-value { font-size: 3rem; font-weight: 800; color: var(--blue); line-height: 1.15; }
+        .distance-value .unit { font-size: 1.2rem; font-weight: 600; color: #94a3b8; }
+        #map { height: 45vh; }
+        .sound-btn {
+            display: block; margin: 1rem auto; padding: 0.9rem 1.6rem; font-size: 1rem; font-weight: 700;
+            background: #0f172a; color: white; border: none; border-radius: 999px; cursor: pointer;
+        }
+        .sound-btn.on { background: var(--green); }
+        .absence-card, .absence-banner {
+            margin: 0.8rem 1.2rem; border-radius: 16px; padding: 1rem 1.1rem;
+            display: flex; flex-direction: column; gap: 0.8rem;
+        }
+        .absence-card { background: white; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        .absence-banner { background: #fef2f2; border: 1px solid #fecaca; color: #7f1d1d; font-size: 0.88rem; }
+        .absence-info strong { display: block; font-size: 0.92rem; color: #0f172a; }
+        .absence-sub { font-size: 0.8rem; color: #64748b; }
+        .absence-btn {
+            padding: 0.75rem; border: none; border-radius: 12px; font-weight: 700; font-size: 0.9rem;
+            background: #ef4444; color: white; cursor: pointer; font-family: inherit;
+        }
+        .absence-btn.cancel { background: var(--green); }
+        .absence-btn:hover { opacity: 0.92; }
+        .note { text-align: center; font-size: 0.85rem; color: #64748b; padding: 0 1rem 1.2rem; }
+        .map-icon {
+            display: flex; align-items: center; justify-content: center;
+            width: 38px; height: 38px; border-radius: 50%;
+            border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.4); color: white; font-size: 18px;
+        }
+        .map-icon.home { background: var(--blue); }
+        .map-icon.bus {
+            background: #f1c40f; color: #7d6608; width: 44px; height: 44px; font-size: 22px;
+            animation: busPulse 1.6s infinite;
+        }
+        @keyframes busPulse {
+            0% { box-shadow: 0 0 0 0 rgba(241, 196, 15, 0.55); }
+            70% { box-shadow: 0 0 0 16px rgba(241, 196, 15, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(241, 196, 15, 0); }
+        }
+        .map-icon.school { background: #16a085; }
+        .offline-banner {
+            background: #431407; color: #fb923c; text-align: center;
+            padding: 0.6rem 1rem; font-size: 0.9rem; font-weight: 700;
+            border-bottom: 2px solid var(--orange);
+        }
+        .msg { padding: 0.7rem 1rem; font-size: 0.9rem; font-weight: 600; }
+        .msg.success { background: #d4edda; color: #155724; border-bottom: 2px solid #c3e6cb; }
+        .msg.warning { background: #fff3cd; color: #664d03; border-bottom: 2px solid #f0b429; }
+    </style>
+</head>
+<body>
+    <header>
+        <div style="display:flex; align-items:center; gap:0.8rem;">
+            <img src="{% static 'images/logo.svg' %}" alt="Scolaloop Logo" class="h-10 w-auto logo-white">
+            <div>
+                <h1 style="margin:0;">Suivi de {{ student.prenom }}</h1>
+                <div class="sub">Bus : {{ bus.code_bus|default:"aucun trajet assigné" }}{% if bus %} · Chauffeur : {{ bus.driver_name|default:"—" }}{% endif %} · <a href="{% url 'routing:logout' %}">Déconnexion</a></div>
+            </div>
+        </div>
+        <div class="badge waiting" id="status-badge">En attente</div>
+    </header>
+
+    <div id="offline-banner" class="offline-banner hidden">🟠 Hors-ligne — les données affichées peuvent être en attente de mise à jour.</div>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="msg {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+
+    <div id="alert-banner" class="alert-banner hidden">
+        🚨 ATTENTION : Le bus est à moins de 100m !
+    </div>
+
+    <div class="distance-card">
+        <div class="distance-label">🚌 Le bus est à</div>
+        <div class="distance-value"><span id="distance">—</span> <span class="unit">m</span></div>
+        <div class="distance-label">de chez vous</div>
+        <div class="distance-label" style="margin-top:0.7rem;">⏰ Arrivée estimée à l'école</div>
+        <div id="eta" style="font-size:1.5rem; font-weight:800; color:var(--green);">—</div>
+    </div>
+
+    {% if absent_today %}
+    <div class="absence-banner">
+        📵 <strong>Absence signalée pour aujourd'hui</strong> — le bus ne s'arrêtera pas chez vous.
+        <form method="post" action="{% url 'routing:parent_absence' %}" style="margin-top:0.4rem;">
+            {% csrf_token %}
+            <button type="submit" class="absence-btn cancel">✅ Annuler l'absence</button>
+        </form>
+    </div>
+    {% else %}
+    <div class="absence-card">
+        <div class="absence-info">
+            <strong>Votre enfant ne prend pas le bus aujourd'hui ?</strong>
+            <span class="absence-sub">Le bus ignorera l'arrêt à votre domicile pour la journée.</span>
+        </div>
+        <form method="post" action="{% url 'routing:parent_absence' %}">
+            {% csrf_token %}
+            <button type="submit" class="absence-btn">📵 Signaler absent aujourd'hui</button>
+        </form>
+    </div>
+    {% endif %}
+
+    <div id="map"></div>
+
+    <button class="sound-btn" id="sound-toggle">🔇 Activer le son</button>
+    <div class="note" id="bus-note">Position du bus : en attente du signal GPS du chauffeur…</div>
+
+    {{ student_data|json_script:"student-data" }}
+
+    <script>
+        const student = JSON.parse(document.getElementById('student-data').textContent);
+        const statusBadge = document.getElementById('status-badge');
+        const alertBanner = document.getElementById('alert-banner');
+        const distanceEl = document.getElementById('distance');
+        const busNote = document.getElementById('bus-note');
+
+        // ---------- Carte ----------
+        const map = L.map('map').setView([student.latitude, student.longitude], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19, attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        // Maison de l'enfant
+        L.marker([student.latitude, student.longitude], { icon: L.divIcon({
+            className: '', html: '<div class="map-icon home"><i class="fa-solid fa-house"></i></div>',
+            iconSize: [38, 38], iconAnchor: [19, 19]
+        })}).addTo(map).bindPopup(`<strong>${student.name}</strong><br>Maison`);
+        L.circle([student.latitude, student.longitude], { radius: 100, color: '#ef4444', weight: 2, fillColor: '#ef4444', fillOpacity: 0.08 }).addTo(map);
+
+        // École (point de départ / retour du trajet)
+        const schoolIcon = L.divIcon({
+            className: '', html: '<div class="map-icon school"><i class="fa-solid fa-school"></i></div>',
+            iconSize: [38, 38], iconAnchor: [19, 19]
+        });
+        let schoolMarker = null;
+
+        // Bus (position temps réel, marqueur animé) — icône SVG personnalisée
+        const busIcon = L.divIcon({
+            className: '',
+            html: '<div class="map-icon bus" style="background:#ffffff;"><img src="{% static 'images/bus_icon.svg' %}" alt="Bus" style="width:100%;height:100%;border-radius:50%;"></div>',
+            iconSize: [44, 44], iconAnchor: [22, 22]
+        });
+        const busMarker = L.marker([0, 0], { icon: busIcon, zIndexOffset: 1000, interactive: false });
+        let routePolyline = null;
+        let animFrame = null, lastBusPos = null;
+
+        // Déplacement fluide du marqueur bus (interpolation entre deux positions).
+        function moveBus(lat, lng) {
+            const to = [lat, lng];
+            if (!lastBusPos) {
+                busMarker.setLatLng(to);
+                lastBusPos = to;
+                if (!busMarker._map) busMarker.addTo(map);
+                return;
+            }
+            const from = lastBusPos;
+            lastBusPos = to;
+            if (animFrame) cancelAnimationFrame(animFrame);
+            const start = performance.now(), dur = 1200;
+            function step(now) {
+                const t = Math.min(1, (now - start) / dur);
+                busMarker.setLatLng([
+                    from[0] + (to[0] - from[0]) * t,
+                    from[1] + (to[1] - from[1]) * t
+                ]);
+                if (t < 1) animFrame = requestAnimationFrame(step);
+            }
+            animFrame = requestAnimationFrame(step);
+        }
+
+        // Tracé complet de l'itinéraire (géométrie routière OSRM) + école.
+        function drawRoute(data) {
+            if (data.school_lat != null && !schoolMarker) {
+                schoolMarker = L.marker([data.school_lat, data.school_lng], { icon: schoolIcon }).addTo(map)
+                    .bindPopup('<strong>🏫 École</strong><br>Départ & retour du bus');
+            }
+            if (data.path_geometry && data.path_geometry.length > 0 && !routePolyline) {
+                routePolyline = L.polyline(data.path_geometry, { color: '#3b82f6', weight: 4, opacity: 0.85 }).addTo(map);
+                L.polylineDecorator(routePolyline, {
+                    patterns: [{ offset: 15, repeat: 120, symbol: L.Symbol.arrowHead({
+                        pixelSize: 10, polygon: false,
+                        pathOptions: { stroke: true, color: '#ffffff', weight: 2 }
+                    })}]
+                }).addTo(map);
+                map.fitBounds(routePolyline.getBounds().pad(0.25));
+            }
+        }
+
+        function haversineM(lat1, lon1, lat2, lon2) {
+            const R = 6371000, toRad = x => x * Math.PI / 180;
+            const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+            const a = Math.sin(dLat / 2) ** 2
+                + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+            return 2 * R * Math.asin(Math.sqrt(a));
+        }
+
+        // ---------- Alerte sonore (Web Audio) ----------
+        let soundEnabled = false, audioCtx = null, inAlertZone = false;
+        function beep(freq, dur) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'square'; osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+            osc.start(); osc.stop(audioCtx.currentTime + dur);
+        }
+        function playAlert() {
+            if (!soundEnabled) return;
+            beep(880, 0.25);
+            setTimeout(() => beep(880, 0.25), 350);
+        }
+        document.getElementById('sound-toggle').addEventListener('click', (e) => {
+            soundEnabled = !soundEnabled;
+            const btn = e.currentTarget;
+            btn.textContent = soundEnabled ? '🔔 Son activé' : '🔇 Activer le son';
+            btn.classList.toggle('on', soundEnabled);
+            if (soundEnabled) { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); playAlert(); }
+        });
+
+        // ---------- Statut & distance ----------
+        function setStatus(state, label) {
+            statusBadge.className = 'badge ' + state;
+            statusBadge.textContent = label;
+        }
+        function update(data) {
+            drawRoute(data);
+            // ETA : heure estimée d'arrivée à l'école (depuis les minutes restantes).
+            const etaEl = document.getElementById('eta');
+            if (data.status === 'en_route' && data.eta_minutes != null) {
+                const eta = new Date(Date.now() + data.eta_minutes * 60000);
+                etaEl.textContent = eta.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            } else {
+                etaEl.textContent = '—';
+            }
+            if (data.is_picked_up) {
+                setStatus('taken', '✅ Enfant récupéré');
+                alertBanner.classList.add('hidden');
+                inAlertZone = false;
+                distanceEl.textContent = '—';
+                busNote.textContent = 'Votre enfant a été pris en charge par le bus.';
+                return;
+            }
+            drawRoute(data);
+            // Trajet non encore planifié : l'affectation est entièrement automatique.
+            if (data.status === 'no_route') {
+                setStatus('waiting', 'Trajet non démarré');
+                alertBanner.classList.add('hidden');
+                inAlertZone = false;
+                distanceEl.textContent = '—';
+                busNote.textContent = 'Aucun trajet n\'a encore été planifié pour votre enfant. L\'affectation se fait automatiquement.';
+                return;
+            }
+            // Feuille de route prête mais bus encore à l'école (pas de signal GPS récent).
+            if (data.status === 'at_depot' || !data.has_gps || data.bus_lat == null) {
+                setStatus('waiting', 'Bus au dépôt');
+                alertBanner.classList.add('hidden');
+                inAlertZone = false;
+                distanceEl.textContent = '—';
+                busNote.textContent = 'Le bus est à l\'école, en attente du départ…';
+                return;
+            }
+            const d = haversineM(student.latitude, student.longitude, data.bus_lat, data.bus_lng);
+            distanceEl.textContent = Math.round(d);
+            moveBus(data.bus_lat, data.bus_lng);
+            drawRoute(data);
+            const speedText = data.speed_kmh ? ` — ${data.speed_kmh} km/h` : '';
+            busNote.textContent = `Bus ${data.bus_code || ''} — dernière position ${data.position_at ? new Date(data.position_at).toLocaleTimeString('fr-FR') : ''}${speedText}`;
+            if (d <= 100) {
+                setStatus('approach', '🚌 Bus en approche');
+                alertBanner.classList.remove('hidden');
+                if (!inAlertZone) { inAlertZone = true; playAlert(); }
+            } else {
+                setStatus('waiting', 'En attente');
+                alertBanner.classList.add('hidden');
+                inAlertZone = false;
+            }
+        }
+
+        // ---------- Indicateur hors-ligne ----------
+        const offlineBanner = document.getElementById('offline-banner');
+        function updateOfflineBanner() {
+            offlineBanner.classList.toggle('hidden', navigator.onLine);
+        }
+        window.addEventListener('online', updateOfflineBanner);
+        window.addEventListener('offline', updateOfflineBanner);
+        updateOfflineBanner();
+
+        // ---------- Rafraîchissement toutes les 5 s ----------
+        async function poll() {
+            try {
+                const resp = await fetch('/api/parent/live/');
+                if (resp.ok) update(await resp.json());
+            } catch (err) { /* réseau : on réessaiera au prochain cycle */ }
+        }
+        poll();
+        setInterval(poll, 3000);
+    </script>
+</body>
+</html>

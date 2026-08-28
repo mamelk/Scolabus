@@ -1,0 +1,353 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Créer une École — Scolaloop</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/logo.svg' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+    <style>
+        :root {
+            --indigo: #4F46E5; --blue: #2563EB; --border: #e2e8f0; --muted: #64748b; --slate: #0f172a;
+            --danger: #dc2626; --danger-bg: #fef2f2;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #eef2ff 0%, #dbeafe 55%, #e0e7ff 100%);
+            min-height: 100vh; display: flex; align-items: flex-start; justify-content: center;
+            padding: 2.5rem 1rem;
+        }
+        .card {
+            background: white; border-radius: 22px; width: 100%; max-width: 540px;
+            box-shadow: 0 25px 60px rgba(79, 70, 229, 0.18);
+            border: 1px solid rgba(226, 232, 240, 0.8); overflow: hidden;
+        }
+        .card-header {
+            background: linear-gradient(135deg, var(--indigo), var(--blue));
+            color: white; padding: 1.6rem 2rem; text-align: center;
+        }
+        .card-header .logo { display: flex; justify-content: center; margin-bottom: 0.6rem; }
+        .card-header .logo img { height: 2.6rem; }
+        .card-header h1 { font-size: 1.3rem; font-weight: 800; letter-spacing: 0.3px; }
+        .card-header p { font-size: 0.83rem; opacity: 0.9; margin-top: 0.25rem; }
+        .card-body { padding: 1.6rem 2rem 2rem; }
+
+        .section { margin-bottom: 1.4rem; }
+        .section-title {
+            display: flex; align-items: center; gap: 0.5rem;
+            font-size: 0.76rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.7px; color: var(--muted); margin-bottom: 0.8rem;
+        }
+        .section-title i { color: var(--indigo); font-size: 0.9rem; }
+
+        .field { margin-bottom: 0.9rem; }
+        .field label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--slate); margin-bottom: 0.3rem; }
+        .input-wrap { position: relative; }
+        .input-wrap i {
+            position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%);
+            color: #94a3b8; font-size: 0.9rem; transition: color 0.15s; pointer-events: none;
+        }
+        .input-wrap:focus-within i { color: var(--indigo); }
+        .field input {
+            width: 100%; padding: 0.66rem 0.85rem;
+            border: 1.5px solid var(--border); border-radius: 12px;
+            font-size: 0.9rem; font-family: inherit; background: #fbfdff;
+            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+        }
+        .input-wrap input { padding-left: 2.45rem; }
+        .field input:hover { border-color: #c7d2fe; }
+        .field input:focus {
+            outline: none; border-color: var(--indigo); background: #fff;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+        }
+        .field-errors { color: var(--danger); font-size: 0.75rem; margin-top: 0.25rem; }
+        .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+        .hint { font-size: 0.72rem; color: var(--muted); margin-top: 0.3rem; }
+        .non-field-errors {
+            background: var(--danger-bg); border: 1px solid #fecaca; color: var(--danger);
+            padding: 0.6rem 0.9rem; border-radius: 10px; font-size: 0.82rem; margin-bottom: 1rem;
+        }
+
+        .gps-btn {
+            width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.55rem;
+            background: linear-gradient(135deg, var(--indigo), var(--blue)); color: white; border: none;
+            padding: 0.8rem; border-radius: 12px; font-size: 0.92rem; font-weight: 700; font-family: inherit;
+            cursor: pointer; box-shadow: 0 6px 18px rgba(79, 70, 229, 0.3);
+            transition: transform 0.12s, box-shadow 0.12s, filter 0.15s;
+        }
+        .gps-btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
+        .gps-btn:disabled { opacity: 0.65; cursor: wait; transform: none; }
+        .geo-alt {
+            margin-top: 0.6rem; width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+            background: #f1f5f9; color: var(--slate); border: 1px solid var(--border);
+            padding: 0.55rem; border-radius: 12px; font-size: 0.8rem; font-weight: 600; font-family: inherit; cursor: pointer;
+        }
+        .geo-alt:hover { background: #e2e8f0; }
+
+        .gps-badge {
+            display: none; margin-top: 0.7rem; align-items: center; gap: 0.5rem;
+            background: #dcfce7; border: 1px solid #86efac; color: #166534;
+            padding: 0.6rem 0.8rem; border-radius: 10px; font-size: 0.8rem; font-weight: 600;
+        }
+        .gps-badge i { color: #16a34a; }
+        .gps-error {
+            display: none; margin-top: 0.7rem;
+            background: var(--danger-bg); border: 1px solid #fecaca; color: var(--danger);
+            padding: 0.6rem 0.8rem; border-radius: 10px; font-size: 0.8rem; font-weight: 600;
+        }
+        #map-wrap { display: none; margin-top: 0.8rem; }
+        #school-map { height: 240px; border-radius: 14px; border: 1.5px solid var(--border); z-index: 0; }
+        .map-hint { font-size: 0.72rem; color: var(--muted); margin-top: 0.35rem; text-align: center; }
+
+        .submit-btn {
+            width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+            background: linear-gradient(135deg, var(--indigo), var(--blue)); color: white; border: none;
+            padding: 0.9rem; border-radius: 12px; font-size: 0.98rem; font-weight: 700; font-family: inherit;
+            cursor: pointer; margin-top: 0.6rem; box-shadow: 0 6px 18px rgba(79, 70, 229, 0.3);
+            transition: transform 0.1s, box-shadow 0.15s, filter 0.15s;
+        }
+        .submit-btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
+        .submit-btn:active { transform: translateY(1px) scale(0.99); }
+        .links { text-align: center; margin-top: 1.1rem; font-size: 0.83rem; }
+        .links a { color: var(--muted); text-decoration: none; font-weight: 500; }
+        .links a:hover { color: var(--indigo); }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="card-header">
+            <span class="logo"><img src="{% static 'images/logo.svg' %}" alt="Scolaloop Logo"></span>
+            <h1>Créer une École</h1>
+            <p>Inscrivez votre école — elle démarre avec 0 élève et 0 bus.</p>
+        </div>
+        <div class="card-body">
+            {% if form.non_field_errors %}
+                <div class="non-field-errors">{{ form.non_field_errors|striptags }}</div>
+            {% endif %}
+
+            <form method="post" action="{% url 'routing:register_school' %}" id="school-form">
+                {% csrf_token %}
+
+                <!-- 1. Identité de l'école -->
+                <div class="section">
+                    <div class="section-title"><i class="fa-solid fa-school"></i> Identité de l'école</div>
+                    <div class="field">
+                        <label for="{{ form.code_ecole.id_for_label }}">{{ form.code_ecole.label }}</label>
+                        <div class="input-wrap">
+                            <i class="fa-solid fa-hashtag"></i>
+                            {{ form.code_ecole }}
+                        </div>
+                        <div class="hint">Identifiant unique (ex : ECO002). Il servira aussi de nom de connexion.</div>
+                        {% if form.code_ecole.errors %}<div class="field-errors">{{ form.code_ecole.errors|striptags }}</div>{% endif %}
+                    </div>
+                    <div class="field">
+                        <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+                        <div class="input-wrap">
+                            <i class="fa-solid fa-building-columns"></i>
+                            {{ form.name }}
+                        </div>
+                        {% if form.name.errors %}<div class="field-errors">{{ form.name.errors|striptags }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <!-- 2. Adresse & Géolocalisation GPS -->
+                <div class="section">
+                    <div class="section-title"><i class="fa-solid fa-location-dot"></i> Adresse & Géolocalisation</div>
+                    <div class="field">
+                        <label for="{{ form.address.id_for_label }}">{{ form.address.label }}</label>
+                        <div class="input-wrap">
+                            <i class="fa-solid fa-map-pin"></i>
+                            {{ form.address }}
+                        </div>
+                        {% if form.address.errors %}<div class="field-errors">{{ form.address.errors|striptags }}</div>{% endif %}
+                    </div>
+
+                    <button type="button" class="gps-btn" id="gps-btn">
+                        <i class="fa-solid fa-location-crosshairs"></i>
+                        Capteur GPS : Définir l'emplacement de l'école ici
+                    </button>
+                    <button type="button" class="geo-alt" id="geocode-btn">
+                        <i class="fa-solid fa-magnifying-glass-location"></i>
+                        Ou géocoder l'adresse automatiquement (OpenStreetMap)
+                    </button>
+
+                    <div class="gps-badge" id="gps-badge">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span id="gps-badge-text"></span>
+                    </div>
+                    <div class="gps-error" id="gps-error"></div>
+
+                    <div id="map-wrap">
+                        <div id="school-map"></div>
+                        <p class="map-hint">🖱️ Déplacez le marqueur pour ajuster précisément l'emplacement de l'école.</p>
+                    </div>
+
+                    <div class="row-2" style="margin-top: 0.8rem;">
+                        <div class="field">
+                            <label for="{{ form.latitude.id_for_label }}">{{ form.latitude.label }}</label>
+                            {{ form.latitude }}
+                            {% if form.latitude.errors %}<div class="field-errors">{{ form.latitude.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="field">
+                            <label for="{{ form.longitude.id_for_label }}">{{ form.longitude.label }}</label>
+                            {{ form.longitude }}
+                            {% if form.longitude.errors %}<div class="field-errors">{{ form.longitude.errors|striptags }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Sécurité -->
+                <div class="section">
+                    <div class="section-title"><i class="fa-solid fa-shield-halved"></i> Sécurité</div>
+                    <div class="field">
+                        <label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+                        <div class="input-wrap">
+                            <i class="fa-solid fa-lock"></i>
+                            {{ form.password }}
+                        </div>
+                        {% if form.password.errors %}<div class="field-errors">{{ form.password.errors|striptags }}</div>{% endif %}
+                    </div>
+                    <div class="field">
+                        <label for="{{ form.confirm_password.id_for_label }}">{{ form.confirm_password.label }}</label>
+                        <div class="input-wrap">
+                            <i class="fa-solid fa-lock"></i>
+                            {{ form.confirm_password }}
+                        </div>
+                        {% if form.confirm_password.errors %}<div class="field-errors">{{ form.confirm_password.errors|striptags }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">
+                    <i class="fa-solid fa-rocket"></i> Créer l'école et se connecter
+                </button>
+            </form>
+
+            <div class="links"><a href="{% url 'routing:login' %}">← Retour à la connexion</a></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script>
+        const latField = document.getElementById('id_latitude');
+        const lngField = document.getElementById('id_longitude');
+        const gpsBtn = document.getElementById('gps-btn');
+        const geoBtn = document.getElementById('geocode-btn');
+        const badge = document.getElementById('gps-badge');
+        const badgeText = document.getElementById('gps-badge-text');
+        const errBox = document.getElementById('gps-error');
+        const mapWrap = document.getElementById('map-wrap');
+
+        let map = null, marker = null;
+
+        function showError(msg) {
+            errBox.textContent = msg;
+            errBox.style.display = 'block';
+            badge.style.display = 'none';
+        }
+
+        function showBadge(lat, lng) {
+            badgeText.textContent = `Coordonnées GPS capturées avec succès : Lat ${lat}, Lng ${lng}`;
+            badge.style.display = 'flex';
+            errBox.style.display = 'none';
+        }
+
+        function setCoords(lat, lng) {
+            latField.value = Number(lat).toFixed(6);
+            lngField.value = Number(lng).toFixed(6);
+        }
+
+        function initMap(lat, lng) {
+            if (!map) {
+                map = L.map('school-map').setView([lat, lng], 16);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap'
+                }).addTo(map);
+                marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+                marker.on('dragend', () => {
+                    const ll = marker.getLatLng();
+                    setCoords(ll.lat, ll.lng);
+                    showBadge(ll.lat.toFixed(6), ll.lng.toFixed(6));
+                });
+            } else {
+                map.setView([lat, lng], 16);
+                marker.setLatLng([lat, lng]);
+            }
+            map.invalidateSize();
+            mapWrap.style.display = 'block';
+        }
+
+        // Capture GPS du lieu de création de l'école.
+        gpsBtn.addEventListener('click', () => {
+            errBox.style.display = 'none';
+            badge.style.display = 'none';
+            if (!('geolocation' in navigator)) {
+                showError("La géolocalisation n'est pas supportée par ce navigateur — saisissez les coordonnées manuellement.");
+                return;
+            }
+            gpsBtn.disabled = true;
+            gpsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Capture GPS en cours…';
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+                    setCoords(lat, lng);
+                    initMap(lat, lng);
+                    showBadge(lat.toFixed(6), lng.toFixed(6));
+                    gpsBtn.disabled = false;
+                    gpsBtn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> GPS capturé — re-capturer ?';
+                },
+                (err) => {
+                    gpsBtn.disabled = false;
+                    gpsBtn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Capteur GPS : Définir l\'emplacement de l\'école ici';
+                    let msg;
+                    if (err.code === err.PERMISSION_DENIED) {
+                        msg = "Veuillez autoriser le GPS pour situer l'école (autorisation refusée).";
+                    } else if (err.code === err.POSITION_UNAVAILABLE) {
+                        msg = 'Position GPS indisponible — signal faible. Vérifiez que le GPS est activé.';
+                    } else if (err.code === err.TIMEOUT) {
+                        msg = 'Délai dépassé pour la capture GPS — réessayez.';
+                    } else {
+                        msg = 'Erreur GPS inconnue — saisissez les coordonnées manuellement.';
+                    }
+                    showError(msg);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        });
+
+        // Alternative : géocodage de l'adresse via Nominatim (OpenStreetMap).
+        geoBtn.addEventListener('click', async () => {
+            const address = document.getElementById('id_address').value.trim();
+            if (!address) { showError("Saisissez d'abord l'adresse physique pour la géolocaliser."); return; }
+            geoBtn.disabled = true;
+            try {
+                const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
+                const results = await resp.json();
+                if (results.length === 0) {
+                    showError('Adresse introuvable — utilisez le capteur GPS ou saisissez les coordonnées manuellement.');
+                    return;
+                }
+                const lat = parseFloat(results[0].lat), lng = parseFloat(results[0].lon);
+                setCoords(lat, lng);
+                initMap(lat, lng);
+                showBadge(lat.toFixed(6), lng.toFixed(6));
+            } catch (e) {
+                showError('Géocodage indisponible (réseau ?) — utilisez le capteur GPS ou saisissez les coordonnées manuellement.');
+            } finally {
+                geoBtn.disabled = false;
+            }
+        });
+
+        // Si le formulaire est re-rendu avec des coordonnées déjà remplies (ex. erreur), on affiche la carte.
+        if (latField.value && lngField.value) {
+            initMap(parseFloat(latField.value), parseFloat(lngField.value));
+            showBadge(parseFloat(latField.value).toFixed(6), parseFloat(lngField.value).toFixed(6));
+        }
+    </script>
+</body>
+</html>

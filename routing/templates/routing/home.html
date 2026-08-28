@@ -1,0 +1,165 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Scolaloop — Système de Transport Scolaire</title>
+    {% include 'routing/_pwa_head.html' %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/logo.svg' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #27ae60;
+            --accent-dark: #1e8449;
+            --light: #f8f9fa;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        .h-10 { height: 2.5rem; }
+        .w-auto { width: auto; }
+        .logo-white { filter: brightness(0) invert(1); }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; color: var(--primary); background: white; }
+        .nav {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 2rem; background: var(--primary); color: white;
+        }
+        .nav .logo { display: flex; align-items: center; }
+        .hero .brand { margin-bottom: 1.2rem; text-align: center; }
+        .hero .brand img { margin: 0 auto; height: 3.5rem; }
+        .nav .user { font-size: 0.85rem; opacity: 0.9; }
+        .hero {
+            text-align: center; padding: 4.5rem 2rem;
+            background: linear-gradient(135deg, #2c3e50 0%, #1a5276 60%, #1e8449 100%);
+            color: white;
+        }
+        .hero h1 { font-size: 2.4rem; margin-bottom: 0.8rem; }
+        .hero p { font-size: 1.1rem; opacity: 0.92; max-width: 720px; margin: 0 auto 1.8rem; }
+        .btn {
+            display: inline-block; background: var(--accent); color: white;
+            padding: 0.85rem 2rem; border-radius: 999px; font-size: 1.05rem;
+            font-weight: 700; text-decoration: none; transition: background 0.15s, transform 0.1s;
+        }
+        .btn:hover { background: var(--accent-dark); transform: translateY(-1px); }
+        .btn.secondary { background: white; color: var(--primary); }
+        .btn.secondary:hover { background: #ecf0f1; }
+        .section { padding: 3rem 2rem; max-width: 1100px; margin: 0 auto; }
+        .section h2 { text-align: center; font-size: 1.6rem; margin-bottom: 2rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.2rem; }
+        .card {
+            background: var(--light); border: 1px solid #dee2e6; border-radius: 12px;
+            padding: 1.4rem; text-align: center;
+        }
+        .card i { font-size: 2rem; color: var(--accent); margin-bottom: 0.7rem; }
+        .card h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+        .card p { font-size: 0.88rem; color: #5d6d7e; }
+        .benefits { background: var(--light); }
+        .benefit-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.2rem; }
+        .benefit { display: flex; gap: 0.8rem; align-items: flex-start; }
+        .benefit i { color: var(--accent); font-size: 1.2rem; margin-top: 0.15rem; }
+        .benefit strong { display: block; margin-bottom: 0.2rem; }
+        .benefit p { font-size: 0.88rem; color: #5d6d7e; }
+        footer { text-align: center; padding: 1.5rem; font-size: 0.8rem; color: #6c757d; }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <span class="logo"><img src="{% static 'images/logo.svg' %}" alt="Scolaloop Logo" class="h-10 w-auto logo-white"></span>
+        <span class="user" style="display:flex; align-items:center; gap:1rem;">
+            <a href="{% url 'routing:about' %}" style="color:#f1c40f;">À propos</a>
+            {% if user.is_authenticated %}
+            Connecté : {{ user.username }} · <a href="{% url 'routing:logout' %}" style="color:#f1c40f;">Déconnexion</a>
+            {% else %}
+            <a href="{% url 'routing:login' %}" style="color:#f1c40f;">Se connecter</a>
+            {% endif %}
+        </span>
+    </nav>
+
+    <header class="hero">
+        <div class="brand"><img src="{% static 'images/logo.svg' %}" alt="Scolaloop Logo" class="h-10 w-auto logo-white"></div>
+        <h1>Bienvenue sur le Système de Transport Scolaire</h1>
+        <p>
+            Optimisez les trajets de bus scolaires en temps réel : tournées en boucle fermée,
+            ordre des arrêts calculé par OR-Tools, itinéraires routiers réels (OSRM) et suivi
+            des élèves pris en charge — le tout sur une carte interactive.
+        </p>
+        {% if user.is_authenticated %}
+        <a class="btn" href="{% url 'routing:dashboard' %}">Accéder au Tableau de Bord →</a>
+        {% else %}
+        <a class="btn" href="{% url 'routing:login' %}">Se connecter</a>
+        {% endif %}
+    </header>
+
+    <section class="section">
+        <h2>Fonctionnalités</h2>
+        <div class="grid">
+            <div class="card">
+                <i class="fa-solid fa-route"></i>
+                <h3>Optimisation des tournées</h3>
+                <p>Problème de tournées de véhicules (VRP) résolu par OR-Tools avec capacités des bus.</p>
+            </div>
+            <div class="card">
+                <i class="fa-solid fa-road"></i>
+                <h3>Itinéraires routiers réels</h3>
+                <p>Les tracés suivent les vraies rues grâce au service de routage OSRM (boucle École → élèves → École).</p>
+            </div>
+            <div class="card">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <h3>Carte interactive</h3>
+                <p>École, bus, élèves et arrêts affichés sur Leaflet, avec le sens de circulation en flèches.</p>
+            </div>
+            <div class="card">
+                <i class="fa-solid fa-file-excel"></i>
+                <h3>Imports Excel</h3>
+                <p>Importez les élèves et les bus en masse depuis des fichiers .xlsx en quelques secondes.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section benefits">
+        <h2>Avantages pour les parents et l'école</h2>
+        <div class="benefit-list">
+            <div class="benefit">
+                <i class="fa-solid fa-shield-halved"></i>
+                <div>
+                    <strong>Suivi en temps réel</strong>
+                    <p>Suivez l'état du ramassage : élèves pris, restants et taux par bus, à tout moment.</p>
+                </div>
+            </div>
+            <div class="benefit">
+                <i class="fa-solid fa-bolt"></i>
+                <div>
+                    <strong>Des tournées plus courtes</strong>
+                    <p>Moins de kilomètres parcourus, moins de carburant et des élèves qui arrivent à l'heure.</p>
+                </div>
+            </div>
+            <div class="benefit">
+                <i class="fa-solid fa-user-lock"></i>
+                <div>
+                    <strong>Accès sécurisé par matricule</strong>
+                    <p>Chaque parent ou élève se connecte avec son matricule et son mot de passe personnel.</p>
+                </div>
+            </div>
+            <div class="benefit">
+                <i class="fa-solid fa-snowflake"></i>
+                <div>
+                    <strong>Gestion des absences</strong>
+                    <p>Gelez l'accès au bus d'un élève en un clic : il est simplement exclu des prochaines tournées.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" style="text-align:center; padding-bottom: 3.5rem;">
+        {% if user.is_authenticated %}
+        <a class="btn" href="{% url 'routing:dashboard' %}">Accéder au Tableau de Bord →</a>
+        {% else %}
+        <a class="btn" href="{% url 'routing:login' %}">Se connecter</a>
+        {% endif %}
+    </section>
+
+    <footer>© 2026 Scolaloop — Système de Transport Scolaire Intelligent · <a href="{% url 'routing:about' %}" style="color:inherit;">À propos</a> · Développé par <strong>ESTECH</strong></footer>
+</body>
+</html>

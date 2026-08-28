@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hors-ligne — Scolaloop</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0f172a; color: #f1f5f9; min-height: 100vh;
+            display: flex; align-items: center; justify-content: center; padding: 1.5rem;
+        }
+        .card { text-align: center; max-width: 420px; }
+        .card .icon { font-size: 3.5rem; margin-bottom: 1rem; }
+        .card h1 { font-size: 1.4rem; margin-bottom: 0.6rem; }
+        .card p { font-size: 0.95rem; color: #94a3b8; line-height: 1.5; }
+        .card .retry {
+            display: inline-block; margin-top: 1.4rem; padding: 0.8rem 1.6rem;
+            background: #22c55e; color: #052e16; border: none; border-radius: 12px;
+            font-size: 1rem; font-weight: 700; cursor: pointer; text-decoration: none;
+        }
+        .card .retry:active { opacity: 0.85; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">📡</div>
+        <h1>Vous êtes hors-ligne</h1>
+        <p>Les données déjà consultées restent disponibles. Dès que la connexion revient,
+           les informations en attente seront synchronisées automatiquement.</p>
+        <button class="retry" onclick="location.reload()">🔄 Réessayer</button>
+    </div>
+</body>
+</html>

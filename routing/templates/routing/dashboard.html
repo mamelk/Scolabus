@@ -1,0 +1,887 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Scolaloop — Optimisation des trajets de bus</title>
+    {% include 'routing/_pwa_head.html' %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/logo.svg' %}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-polylinedecorator/1.6.0/leaflet.polylineDecorator.min.js"></script>
+    <!-- Tailwind CSS (CDN) — preflight désactivé pour préserver les styles existants -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { corePlugins: { preflight: false } };</script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #27ae60;
+            --light: #f8f9fa;
+            --border: #dee2e6;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        .h-10 { height: 2.5rem; }
+        .w-auto { width: auto; }
+        .logo-white { filter: brightness(0) invert(1); }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light); color: var(--primary); }
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        header h1 { font-size: 1.3rem; font-weight: 600; }
+        header .subtitle { font-size: 0.85rem; opacity: 0.8; }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.55rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover { background: #1e8449; }
+        .btn-secondary { background: #34495e; }
+        .btn-secondary:hover { background: #2c3e50; }
+        .btn-warning { background: #e67e22; }
+        .btn-warning:hover { background: #ca6f1e; }
+        .btn-danger { background: #c0392b; }
+        .btn-danger:hover { background: #a93226; }
+        .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.75rem; }
+        .tabs {
+            display: flex;
+            gap: 0.25rem;
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 0 1.5rem;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 0.9rem 1.2rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #6c757d;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--accent); }
+        .tab-panel { display: none; padding: 1.5rem; max-width: 1400px; margin: 0 auto; }
+        .tab-panel.active { display: block; }
+        #map { height: 600px; border-radius: 8px; border: 1px solid var(--border); }
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .card h2 { font-size: 1rem; margin-bottom: 0.6rem; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th, td { text-align: left; padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--border); }
+        th { color: #6c757d; font-weight: 600; }
+        .badge { padding: 0.2rem 0.55rem; border-radius: 999px; font-size: 0.72rem; font-weight: 600; }
+        .badge-active { background: #d4edda; color: #155724; }
+        .badge-frozen { background: #d1ecf1; color: #0c5460; }
+        .badge-absent { background: #fdecea; color: #7f1d1d; }
+        .badge-off { background: #e2e3e5; color: #383d41; }
+        .incident-list { display: grid; gap: 0.6rem; }
+        .incident-item {
+            padding: 0.7rem 0.9rem; border-radius: 10px; border: 1px solid var(--border);
+            border-left: 4px solid #e67e22; background: #fff8f0;
+        }
+        .incident-item.speed { border-left-color: #dc2626; background: #fef2f2; }
+        .incident-head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+        .muted { color: #6c757d; font-size: 0.8rem; }
+        .maintenance-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.8rem; }
+        .maintenance-grid label { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--primary); }
+        .maintenance-grid select, .maintenance-grid input, #broadcast-bus, #broadcast-msg {
+            width: 100%; padding: 0.55rem 0.65rem; border: 1px solid var(--border); border-radius: 8px;
+            font-size: 0.88rem; font-family: inherit;
+        }
+        #broadcast-msg { resize: vertical; }
+        .actions { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+        .empty { color: #6c757d; font-style: italic; font-size: 0.85rem; }
+        .messages { max-width: 1400px; margin: 1rem auto 0; padding: 0 1.5rem; }
+        .msg { padding: 0.6rem 1rem; border-radius: 6px; font-size: 0.9rem; margin-bottom: 0.5rem; }
+        .msg.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .msg.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .assign-alert {
+            display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+            max-width: 1400px; margin: 0.8rem auto 0; padding: 0.8rem 1.2rem;
+            background: #fff3cd; color: #664d03; border: 2px solid #f0b429; border-radius: 10px;
+            font-size: 0.95rem; font-weight: 600;
+        }
+        .assign-alert .assign-alert-sub { font-weight: 400; font-size: 0.85rem; opacity: 0.9; }
+        .assign-btn {
+            padding: 0.7rem 1.2rem; font-size: 0.92rem; font-weight: 700;
+            background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer;
+            white-space: nowrap;
+        }
+        .assign-btn:hover { filter: brightness(1.15); }
+        .assign-btn:active { transform: translateY(1px); }
+        .toolbar { display: flex; gap: 0.5rem; margin-bottom: 0.8rem; flex-wrap: wrap; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+        .stat-card { border-top: 4px solid var(--accent); }
+        .stat-card .big { font-size: 1.6rem; font-weight: 700; }
+        .stat-row { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0.2rem 0; }
+        .progress { background: #e9ecef; border-radius: 999px; height: 10px; overflow: hidden; margin-top: 0.5rem; }
+        .progress > div { background: var(--accent); height: 100%; }
+        .school-info { font-size: 0.9rem; }
+        .school-info strong { color: var(--accent); }
+        /* ---- Widgets KPI (style SaaS moderne) ---- */
+        .kpi-row {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.9rem; max-width: 1400px; margin: 0.9rem auto 0; padding: 0 1.5rem;
+        }
+        .kpi-card {
+            background: white; border: 1px solid var(--border); border-radius: 14px;
+            padding: 0.9rem 1.1rem; border-top: 4px solid var(--accent);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+        .kpi-card .kpi-lbl { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6c757d; }
+        .kpi-card .kpi-val { font-size: 1.7rem; font-weight: 800; color: var(--primary); line-height: 1.15; }
+        .kpi-card.kpi-alert { border-top-color: #dc2626; }
+        .kpi-card.kpi-alert .kpi-val { color: #dc2626; }
+        /* ---- Barre latérale flotte (temps réel) ---- */
+        .fleet-sidebar {
+            width: 300px; min-width: 300px; background: white;
+            border: 1px solid var(--border); border-radius: 12px;
+            padding: 0.9rem; max-height: 600px; overflow-y: auto;
+        }
+        .fleet-sidebar h3 { font-size: 0.85rem; font-weight: 700; margin-bottom: 0.6rem; color: var(--primary); }
+        .fleet-item {
+            border: 1px solid var(--border); border-radius: 10px;
+            padding: 0.55rem 0.7rem; margin-bottom: 0.5rem; background: #fcfcfd;
+        }
+        .fleet-head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+        .fleet-head strong { font-size: 0.9rem; color: var(--primary); }
+        .fleet-sub { font-size: 0.72rem; color: #6c757d; margin-top: 0.2rem; }
+        .fleet-route { font-size: 0.72rem; color: #6c757d; margin-top: 0.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* ---- Badges de vitesse dynamiques ---- */
+        .speed-badge {
+            padding: 0.15rem 0.55rem; border-radius: 999px;
+            font-size: 0.75rem; font-weight: 800; white-space: nowrap;
+        }
+        .speed-badge.speed-none { background: #e2e3e5; color: #383d41; }
+        .speed-badge.speed-low { background: #d4edda; color: #155724; }
+        .speed-badge.speed-mid { background: #cfe8ff; color: #1e40af; }
+        .speed-badge.speed-high {
+            background: #dc2626; color: white;
+            animation: blinkRed 0.8s steps(2, start) infinite;
+        }
+        @keyframes blinkRed { 50% { opacity: 0.35; } }
+        /* Étiquette de vitesse sous le marqueur bus sur la carte */
+        .speed-tag {
+            margin-top: 2px; text-align: center;
+            background: rgba(15, 23, 42, 0.85); color: white;
+            border-radius: 6px; padding: 1px 5px;
+            font-size: 0.68rem; font-weight: 700; white-space: nowrap;
+        }
+        .speed-tag.tag-high { background: #dc2626; animation: blinkRed 0.8s steps(2, start) infinite; }
+        dialog {
+            border: none;
+            border-radius: 10px;
+            padding: 1.4rem;
+            width: min(480px, 90vw);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+        }
+        dialog::backdrop { background: rgba(0,0,0,0.4); }
+        dialog h2 { font-size: 1.05rem; margin-bottom: 0.8rem; }
+        dialog form p { margin-bottom: 0.6rem; display: flex; flex-direction: column; }
+        dialog form label { font-size: 0.8rem; font-weight: 600; margin-bottom: 0.2rem; }
+        dialog form input { padding: 0.45rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; }
+        dialog form input[type="checkbox"] { width: auto; align-self: flex-start; }
+        .dialog-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+        .hint { font-size: 0.75rem; color: #6c757d; margin: 0.3rem 0 0.6rem; }
+        footer { text-align: center; padding: 1rem; font-size: 0.8rem; color: #6c757d; }
+        .legend { font-size: 0.8rem; margin-top: 0.5rem; }
+        .legend span { display: inline-flex; align-items: center; gap: 0.3rem; margin-right: 0.8rem; }
+        .map-icon {
+            display: flex; align-items: center; justify-content: center;
+            width: 34px; height: 34px; border-radius: 50%;
+            border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            color: white; font-size: 16px;
+        }
+        .map-icon.school { background: #16a085; }
+        .map-icon.bus { background: #f1c40f; color: #7d6608; }
+        .map-icon.student { background: #2196f3; }
+        .map-icon.student.frozen { background: #9e9e9e; }
+    </style>
+</head>
+<body>
+    <header>
+        <div style="display:flex; align-items:center; gap:1rem;">
+            <img src="{% static 'images/logo.svg' %}" alt="Scolaloop Logo" class="h-10 w-auto logo-white">
+            <div>
+                <h1 style="margin:0;">Optimisation des trajets de bus</h1>
+                <div class="subtitle">Boucles fermées : École → élèves → École · OR-Tools + Haversine</div>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:1rem;">
+            <span style="font-size:0.85rem; opacity:0.9;">👤 {{ request.user.username }}</span>
+            {% if request.user.is_superuser %}
+            <a class="btn btn-secondary" href="{% url 'routing:schools_admin' %}" style="padding:0.5rem 1rem;">🏫 Admin. écoles</a>
+            {% endif %}
+            <a class="btn btn-secondary" href="{% url 'routing:logout' %}" style="padding:0.5rem 1rem;">Déconnexion</a>
+        </div>
+    </header>
+
+    {% if unassigned_count %}
+    <!-- Alerte informative : l'affectation est 100 % automatique, aucune action requise -->
+    <div class="assign-alert">
+        <div>
+            <strong>⚠️ {{ unassigned_count }} élève(s) non affecté(s) au transport.</strong>
+            {% if overcapacity_count %}
+            <br><span class="assign-alert-sub">Dont {{ overcapacity_count }} en surcapacité — tous les bus proches sont complets. L'affectation est automatique dès qu'une place se libère.</span>
+            {% else %}
+            <br><span class="assign-alert-sub">Aucune action requise : l'affectation se fait automatiquement dès qu'un bus est disponible.</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="msg {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Widgets d'indicateurs clés (mis à jour toutes les 5 s via /api/school/fleet/) -->
+    <div class="kpi-row">
+        <div class="kpi-card">
+            <div class="kpi-lbl">🚌 Bus en route</div>
+            <div class="kpi-val" id="live-enroute">{{ buses|length }}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-lbl">🎒 Taux de ramassage</div>
+            <div class="kpi-val" id="live-pickup">—</div>
+        </div>
+        <div class="kpi-card kpi-alert">
+            <div class="kpi-lbl">🚨 Excès de vitesse</div>
+            <div class="kpi-val" id="live-speed-alerts">0</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-lbl">⏱️ En retard</div>
+            <div class="kpi-val" id="live-delayed">{{ live_delayed }}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-lbl">⚠️ Non affectés</div>
+            <div class="kpi-val" id="live-unassigned">{{ live_unassigned }}</div>
+        </div>
+    </div>
+
+    <nav class="tabs">
+        <button class="tab-btn active" data-tab="map">🗺️ Carte & Direct</button>
+        <button class="tab-btn" data-tab="students">🎓 Élèves</button>
+        <button class="tab-btn" data-tab="buses">🚌 Flotte des Bus</button>
+        <button class="tab-btn" data-tab="stats">📊 Statistiques</button>
+        <button class="tab-btn" data-tab="incidents">🚨 Incidents & Alertes</button>
+        <button class="tab-btn" data-tab="maintenance">🛠️ Maintenance Flotte</button>
+    </nav>
+
+    <!-- ============================ Onglet Carte & Direct ============================ -->
+    <section id="tab-map" class="tab-panel active">
+        <div class="card school-info">
+            {% if school %}
+                🏫 <strong>École :</strong> {{ school.name }} ({{ school.latitude }}, {{ school.longitude }})
+                — point de départ et de retour des trajets.
+            {% else %}
+                ⚠️ <strong>Aucune école définie.</strong> Créez une école (admin ou seed) avant d'optimiser.
+            {% endif %}
+        </div>
+        <div class="flex gap-4 items-start">
+            <!-- Barre latérale : bus en circulation avec badges de vitesse -->
+            <aside class="fleet-sidebar">
+                <h3>🚌 Bus en circulation</h3>
+                <div id="fleet-sidebar-list"></div>
+            </aside>
+            <div class="flex-1">
+                <div id="map" style="height: 640px;"></div>
+                <div class="card legend">
+                    <span>🏫 <strong>École</strong></span>
+                    <span>🚌 <strong>Bus</strong> (base : école)</span>
+                    <span>🎒 <strong>Élève</strong></span>
+                    <span>⚪ <strong>Élève gelé</strong></span>
+                    <span>➡️ <strong>Flèches</strong> = sens de circulation</span>
+                    <span>📈 <strong>Ligne</strong> = itinéraire routier réel (OSRM), repli sur lignes droites si indisponible</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================ Onglet Élèves ============================ -->
+    <section id="tab-students" class="tab-panel">
+        <div class="card">
+            <h2>Élèves ({{ students|length }})</h2>
+            <div class="toolbar">
+                <button class="btn" onclick="openDialog('student-add')">➕ Ajouter un élève</button>
+                <button class="btn btn-secondary" onclick="openDialog('student-import')">📥 Importer Excel</button>
+                <button class="btn btn-secondary" onclick="openDialog('student-freeze')">❄️ Geler un groupe (Excel)</button>
+            </div>
+            {% if students %}
+            <table>
+                <thead>
+                    <tr><th>Matricule</th><th>Nom</th><th>Adresse</th><th>Statut</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    {% for s in students %}
+                    <tr>
+                        <td>{{ s.matricule }}</td>
+                        <td>{{ s.prenom }}{% if s.postnom %} {{ s.postnom }}{% endif %} {{ s.nom }}</td>
+                        <td>{{ s.address }}</td>
+                        <td>
+                            {% if s.is_frozen %}
+                                <span class="badge badge-frozen">❄️ Gelé</span>
+                            {% elif s.id in absent_today %}
+                                <span class="badge badge-absent">📵 Absent aujourd'hui</span>
+                            {% else %}
+                                <span class="badge badge-active">Actif</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="actions">
+                                <form method="post" action="{% url 'routing:toggle_freeze_student' s.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-secondary">
+                                        {% if s.is_frozen %}Dégeler{% else %}Geler{% endif %}
+                                    </button>
+                                </form>
+                                <a class="btn btn-sm btn-warning" href="{% url 'routing:student_edit' s.pk %}">Modifier</a>
+                                <button type="button" class="btn btn-sm btn-secondary" title="Réinitialiser le mot de passe (compte parent/élève)" onclick="openResetPw('{% url 'routing:student_reset_password' s.pk %}', '{{ s.matricule|escapejs }}')">🔑</button>
+                                <form method="post" action="{% url 'routing:student_delete' s.pk %}"
+                                      onsubmit="return confirm('Supprimer l\'élève {{ s.matricule }} ?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty">Aucun élève actif.</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- ============================ Onglet Flotte des Bus ============================ -->
+    <section id="tab-buses" class="tab-panel">
+        <div class="card">
+            <h2>Flotte de bus ({{ buses|length }})</h2>
+            <div class="toolbar">
+                <button class="btn" onclick="openDialog('bus-add')">➕ Ajouter un bus</button>
+                <button class="btn btn-secondary" onclick="openDialog('bus-import')">📥 Importer Excel</button>
+                <a class="btn btn-secondary" href="{% url 'routing:export_students_by_bus' %}">📥 Liste élèves par bus (Excel)</a>
+            </div>
+            {% if buses %}
+            <table>
+                <thead><tr><th>Code bus</th><th>Chauffeur</th><th>Capacité</th><th>État</th><th>Actions</th></tr></thead>
+                <tbody>
+                    {% for b in buses %}
+                    <tr>
+                        <td>{{ b.code_bus }}</td>
+                        <td>{{ b.driver_name|default:"—" }}</td>
+                        <td>{{ b.capacity }}</td>
+                        <td>
+                            {% if b.is_in_service %}
+                                <span class="badge badge-active">En service</span>
+                            {% else %}
+                                <span class="badge badge-off">Hors service</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="actions">
+                                <a class="btn btn-sm btn-secondary" href="{% url 'routing:replay' b.pk %}">▶️ Replay GPS</a>
+                                <a class="btn btn-sm btn-secondary" href="{% url 'routing:export_bus_students' b.pk %}" title="Télécharger la liste des élèves de ce bus (Excel)">📥</a>
+                                <a class="btn btn-sm btn-secondary" href="{% url 'routing:route_sheet_pdf' b.pk %}" title="Feuille de route PDF imprimable (chauffeur)">📄</a>
+                                <button type="button" class="btn btn-sm btn-secondary" title="Réinitialiser le mot de passe (compte chauffeur)" onclick="openResetPw('{% url 'routing:bus_reset_password' b.pk %}', '{{ b.code_bus|escapejs }}')">🔑</button>
+                                <a class="btn btn-sm btn-warning" href="{% url 'routing:bus_edit' b.pk %}">Modifier</a>
+                                <form method="post" action="{% url 'routing:bus_delete' b.pk %}"
+                                      onsubmit="return confirm('Supprimer le bus {{ b.code_bus }} ?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty">Aucun bus.</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- ============================ Onglet Statistiques ============================ -->
+    <section id="tab-stats" class="tab-panel">
+        {% if stats %}
+        <div class="stats-grid">
+            {% for st in stats %}
+            <div class="card stat-card">
+                <h2>🚌 {{ st.bus.code_bus }}</h2>
+                <div class="stat-row"><span>Chauffeur</span><span>{{ st.bus.driver_name|default:"—" }}</span></div>
+                <div class="stat-row"><span>Capacité</span><span>{{ st.bus.capacity }}</span></div>
+                <div class="stat-row"><span>Routes</span><span>{{ st.routes|length }}</span></div>
+                <div class="stat-row"><span>Élèves assignés</span><span class="big">{{ st.assigned }}</span></div>
+                <div class="stat-row"><span>Pris</span><span>{{ st.taken }}</span></div>
+                <div class="stat-row"><span>Restants</span><span>{{ st.remaining }}</span></div>
+                <div class="stat-row"><span>Taux de ramassage</span><span>{{ st.pickup_rate }}%</span></div>
+                <div class="progress"><div style="width: {{ st.pickup_rate }}%;"></div></div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="card"><p class="empty">Aucun bus enregistré.</p></div>
+        {% endif %}
+    </section>
+
+    <!-- ============================ Onglet Incidents & Alertes ============================ -->
+    <section id="tab-incidents" class="tab-panel">
+        <div class="card">
+            <h2>🚨 Incidents signalés ({{ incidents|length }})</h2>
+            {% if incidents %}
+            <div class="incident-list">
+                {% for inc in incidents %}
+                <div class="incident-item {% if inc.type_incident == 'Excès de vitesse' %}speed{% endif %}">
+                    <div class="incident-head">
+                        <strong>{{ inc.type_incident }}</strong>
+                        <span class="muted">🚌 {{ inc.bus.code_bus }} · {{ inc.timestamp|date:"d/m H:i" }}</span>
+                    </div>
+                    {% if inc.description %}<div class="muted">{{ inc.description }}</div>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="empty">Aucun incident en cours. 🎉</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>📣 SMS d'urgence aux parents</h2>
+            <p class="hint">Diffusez une notification à tous les parents des élèves d'un bus (ex : « Bus 01 bloqué dans les embouteillages, retard de 20 min »).</p>
+            <form method="post" action="{% url 'routing:broadcast_sms' %}">
+                {% csrf_token %}
+                <label for="broadcast-bus">Bus concerné</label>
+                <select id="broadcast-bus" name="bus_id" required>
+                    {% for b in buses %}
+                    <option value="{{ b.pk }}">{{ b.code_bus }}</option>
+                    {% endfor %}
+                </select>
+                <label for="broadcast-msg" style="margin-top:0.8rem;">Message</label>
+                <textarea id="broadcast-msg" name="message" rows="3" placeholder="Ex : Bus 01 bloqué dans les embouteillages, retard de 20 min…" required></textarea>
+                <button type="submit" class="btn" style="margin-top:0.8rem;">📲 Envoyer le SMS d'urgence</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- ============================ Onglet Maintenance Flotte ============================ -->
+    <section id="tab-maintenance" class="tab-panel">
+        <div class="card">
+            <h2>🛠️ Enregistrer un entretien / révision</h2>
+            <form method="post" action="{% url 'routing:maintenance_add' %}">
+                {% csrf_token %}
+                <div class="maintenance-grid">
+                    <div>
+                        <label for="maint-bus">Bus</label>
+                        <select id="maint-bus" name="bus_id" required>
+                            {% for b in buses %}
+                            <option value="{{ b.pk }}">{{ b.code_bus }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="maint-type">Type d'entretien</label>
+                        <select id="maint-type" name="service_type" required>
+                            {% for t in maintenance_types %}
+                            <option value="{{ t }}">{{ t }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="maint-cost">Coût ($)</label>
+                        <input type="number" id="maint-cost" name="cost" step="0.01" min="0" value="0">
+                    </div>
+                    <div>
+                        <label for="maint-date">Date effectuée</label>
+                        <input type="date" id="maint-date" name="date_effectuee" value="{% now 'Y-m-d' %}">
+                    </div>
+                    <div>
+                        <label for="maint-next">Prochaine échéance (km ou date)</label>
+                        <input type="text" id="maint-next" name="prochaine_echeance" placeholder="Ex : 5000 km ou 15/12/2026">
+                    </div>
+                </div>
+                <button type="submit" class="btn" style="margin-top:0.8rem;">➕ Enregistrer l'entretien</button>
+            </form>
+        </div>
+
+        {% if maintenance %}
+        <div class="card">
+            <h2>Historique des entretiens</h2>
+            <table>
+                <thead><tr><th>Bus</th><th>Type</th><th>Coût</th><th>Date</th><th>Prochaine échéance</th><th>Action</th></tr></thead>
+                <tbody>
+                    {% for m in maintenance %}
+                    <tr>
+                        <td>{{ m.bus.code_bus }}</td>
+                        <td>{{ m.service_type }}</td>
+                        <td>{{ m.cost }} $</td>
+                        <td>{{ m.date_effectuee|date:"d/m/Y" }}</td>
+                        <td>{{ m.prochaine_echeance_km_ou_date|default:"—" }}</td>
+                        <td>
+                            <form method="post" action="{% url 'routing:maintenance_delete' m.pk %}"
+                                  onsubmit="return confirm('Supprimer cet entretien ?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="card"><p class="empty">Aucun entretien enregistré pour le moment.</p></div>
+        {% endif %}
+    </section>
+
+    <footer>
+        Carte © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · Leaflet.js
+    </footer>
+
+    <!-- ============================ Modales ============================ -->
+    <dialog id="student-add">
+        <h2>➕ Ajouter un élève</h2>
+        <form method="post" action="{% url 'routing:student_add' %}">
+            {% csrf_token %}
+            {{ student_form.as_p }}
+            <div class="dialog-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeDialog('student-add')">Annuler</button>
+                <button type="submit" class="btn">Ajouter</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="student-import">
+        <h2>📥 Importer des élèves (Excel)</h2>
+        <form method="post" action="{% url 'routing:upload_students' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <label for="file-students">Fichier .xlsx</label>
+            <input type="file" id="file-students" name="file" accept=".xlsx" required>
+            <p class="hint">Colonnes : matricule, nom, postnom, prenom, adresse, telephone<br><small>La position GPS du domicile est définie par le parent à sa première connexion.</small></p>
+            <div class="dialog-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeDialog('student-import')">Annuler</button>
+                <button type="submit" class="btn">Importer</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="student-freeze">
+        <h2>❄️ Geler un groupe d'élèves (Excel)</h2>
+        <form method="post" action="{% url 'routing:upload_students_freeze' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <label for="file-students-freeze">Fichier .xlsx</label>
+            <input type="file" id="file-students-freeze" name="file" accept=".xlsx" required>
+            <p class="hint">La <strong>première colonne</strong> doit contenir les matricules des élèves à geler (les autres colonnes sont ignorées).<br><small>Un en-tête « Matricule » en première ligne est accepté et ignoré. Les élèves gelés sont exclus des prochaines optimisations de trajet.</small></p>
+            <div class="dialog-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeDialog('student-freeze')">Annuler</button>
+                <button type="submit" class="btn">Geler le groupe</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="bus-add">
+        <h2>➕ Ajouter un bus</h2>
+        <form method="post" action="{% url 'routing:bus_add' %}">
+            {% csrf_token %}
+            {{ bus_form.as_p }}
+            <div class="dialog-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeDialog('bus-add')">Annuler</button>
+                <button type="submit" class="btn">Ajouter</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="bus-import">
+        <h2>📥 Importer des bus (Excel)</h2>
+        <form method="post" action="{% url 'routing:upload_buses' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <label for="file-buses">Fichier .xlsx</label>
+            <input type="file" id="file-buses" name="file" accept=".xlsx" required>
+            <p class="hint">Colonnes : code_bus, nom_chauffeur, capacite</p>
+            <div class="dialog-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeDialog('bus-import')">Annuler</button>
+                <button type="submit" class="btn">Importer</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="reset-pw">
+        <h2>🔑 Réinitialiser le mot de passe</h2>
+        <form method="post" id="reset-pw-form">
+            {% csrf_token %}
+            <p class="hint" id="reset-pw-hint"></p>
+            <label for="reset-pw-1">Nouveau mot de passe</label>
+            <input type="password" id="reset-pw-1" name="password1" required minlength="4" placeholder="Au moins 4 caractères">
+            <label for="reset-pw-2">Confirmer le mot de passe</label>
+            <input type="password" id="reset-pw-2" name="password2" required minlength="4" placeholder="Répétez le mot de passe">
+            <div class="dialog-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeDialog('reset-pw')">Annuler</button>
+                <button type="submit" class="btn">Réinitialiser</button>
+            </div>
+        </form>
+    </dialog>
+
+    {{ map_data|json_script:"map-data" }}
+
+    <script>
+        // ---------- Onglets ----------
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+                if (btn.dataset.tab === 'map') setTimeout(() => map.invalidateSize(), 60);
+            });
+        });
+
+        // ---------- Modales ----------
+        function openDialog(id) { document.getElementById(id).showModal(); }
+        function closeDialog(id) { document.getElementById(id).close(); }
+        function openResetPw(actionUrl, label) {
+            document.getElementById('reset-pw-form').action = actionUrl;
+            document.getElementById('reset-pw-hint').textContent =
+                'Compte : ' + label + ' — le titulaire devra personnaliser ce mot de passe à sa prochaine connexion.';
+            openDialog('reset-pw');
+        }
+
+        // ---------- Carte ----------
+        const data = JSON.parse(document.getElementById('map-data').textContent);
+        const map = L.map('map').setView([-11.66, 27.47], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        const bounds = [];
+
+        // École : icône bâtiment
+        if (data.school) {
+            const s = data.school;
+            L.marker([s.latitude, s.longitude], { icon: L.divIcon({
+                className: '',
+                html: '<div class="map-icon school"><i class="fa-solid fa-school"></i></div>',
+                iconSize: [34, 34], iconAnchor: [17, 17]
+            })}).addTo(map).bindPopup(`<strong>🏫 ${s.name}</strong><br>Départ & retour des bus`);
+            bounds.push([s.latitude, s.longitude]);
+        }
+
+        // Bus : icône bus jaune (base = école, en attendant le suivi GPS)
+        // Les marqueurs sont conservés par id : le rafraîchissement temps réel
+        // les déplace, en ajoute (chauffeur connecté) ou en retire (déconnecté).
+        const busMarkers = {};
+        const busSpeedTags = {};  // id bus → étiquette de vitesse sous le marqueur
+        function delayLabel(d) {
+            if (d == null) return '⏱️ Retard : —';
+            if (d > 5) return `⏱️ Retard estimé : ${Math.round(d)} min`;
+            if (d < -1) return `✅ En avance (~${Math.round(-d)} min)`;
+            return '✅ À l\'heure';
+        }
+        function busPopupContent(b) {
+            const pos = b.position_label || (b.at_base ? 'Position de base (école)' : 'Position GPS en direct');
+            const speed = b.speed_kmh != null ? ` — ${Math.round(b.speed_kmh)} km/h` : '';
+            return `<strong>🚌 ${b.code_bus}</strong><br>Chauffeur : ${b.driver_name || '—'}<br>Capacité : ${b.capacity}<br>${pos}${speed}<br>${b.route_name ? 'Trajet : ' + b.route_name : 'Aucun trajet assigné'}<br>${delayLabel(b.delay_minutes)}`;
+        }
+        function speedBadgeClass(kmh) {
+            if (kmh == null) return 'speed-none';
+            if (kmh > 50) return 'speed-high';
+            if (kmh >= 20) return 'speed-mid';
+            return 'speed-low';
+        }
+        function speedBadgeLabel(b) {
+            return b.speed_kmh == null ? '—' : `${Math.round(b.speed_kmh)} km/h`;
+        }
+        function upsertBusMarker(b) {
+            const existing = busMarkers[b.id];
+            if (existing) {
+                existing.setLatLng([b.latitude, b.longitude]);
+                existing.setPopupContent(busPopupContent(b));
+                const tag = busSpeedTags[b.id];
+                if (tag) {
+                    tag.textContent = speedBadgeLabel(b);
+                    tag.className = 'speed-tag' + (b.is_speeding ? ' tag-high' : '');
+                }
+                return;
+            }
+            const marker = L.marker([b.latitude, b.longitude], { icon: L.divIcon({
+                className: '',
+                html: '<div class="map-icon bus" style="background:#ffffff;"><img src="{% static 'images/bus_icon.svg' %}" alt="Bus" style="width:100%;height:100%;border-radius:50%;"></div>'
+                    + '<div class="speed-tag">' + speedBadgeLabel(b) + '</div>',
+                iconSize: [34, 44], iconAnchor: [17, 22]
+            })}).addTo(map)
+              .bindPopup(busPopupContent(b));
+            busMarkers[b.id] = marker;
+            const tagEl = marker.getElement() ? marker.getElement().querySelector('.speed-tag') : null;
+            if (tagEl) busSpeedTags[b.id] = tagEl;
+            bounds.push([b.latitude, b.longitude]);
+        }
+        (data.buses || []).forEach(upsertBusMarker);
+
+        // ---------- Barre latérale flotte (badges de vitesse dynamiques) ----------
+        function fleetSidebarItem(b) {
+            const div = document.createElement('div');
+            div.className = 'fleet-item';
+            div.id = 'fleet-item-' + b.id;
+            div.innerHTML = `
+                <div class="fleet-head">
+                    <strong>🚌 ${b.code_bus}</strong>
+                    <span class="speed-badge ${speedBadgeClass(b.speed_kmh)}">${speedBadgeLabel(b)}</span>
+                </div>
+                <div class="fleet-sub">${b.driver_name || '—'} · Cap. ${b.capacity}</div>
+                <div class="fleet-route">${b.route_name ? 'Trajet : ' + b.route_name : 'Aucun trajet'}</div>`;
+            return div;
+        }
+        function renderSidebar(buses) {
+            const list = document.getElementById('fleet-sidebar-list');
+            if (!list) return;
+            const seen = {};
+            (buses || []).forEach(b => {
+                seen[b.id] = true;
+                const el = document.getElementById('fleet-item-' + b.id);
+                if (el) {
+                    const badge = el.querySelector('.speed-badge');
+                    if (badge) { badge.className = 'speed-badge ' + speedBadgeClass(b.speed_kmh); badge.textContent = speedBadgeLabel(b); }
+                    const routeEl = el.querySelector('.fleet-route');
+                    if (routeEl) routeEl.textContent = b.route_name ? 'Trajet : ' + b.route_name : 'Aucun trajet';
+                } else {
+                    list.appendChild(fleetSidebarItem(b));
+                }
+            });
+            list.querySelectorAll('.fleet-item').forEach(el => {
+                const id = parseInt(el.id.replace('fleet-item-', ''), 10);
+                if (!seen[id]) el.remove();
+            });
+        }
+        renderSidebar(data.buses);
+
+        // Élèves : icône sac à dos (bleu = actif, gris = gelé)
+        data.students.forEach(st => {
+            const latlng = [st.latitude, st.longitude];
+            const icon = L.divIcon({
+                className: '',
+                html: `<div class="map-icon student${st.frozen ? ' frozen' : ''}"><i class="fa-solid fa-user-graduate"></i></div>`,
+                iconSize: [34, 34], iconAnchor: [17, 17]
+            });
+            L.marker(latlng, { icon }).addTo(map)
+                .bindPopup(`<strong>${st.matricule} — ${[st.prenom, st.postnom, st.nom].filter(Boolean).join(' ')}</strong><br>${st.address}${st.frozen ? '<br>❄️ Gelé' : ''}`);
+            bounds.push(latlng);
+        });
+
+        // Trajets : boucle fermée École → arrêts → École
+        // Géométrie routière réelle (OSRM) si disponible, sinon repli sur lignes droites.
+        const colors = ['#e74c3c', '#2980b9', '#27ae60', '#f39c12', '#8e44ad', '#16a085', '#c0392b', '#2c3e50'];
+        data.routes.forEach((route, i) => {
+            const color = colors[i % colors.length];
+            const stops = route.stops.map(st => [st.latitude, st.longitude]);
+            const straightLoop = data.school
+                ? [[data.school.latitude, data.school.longitude], ...stops, [data.school.latitude, data.school.longitude]]
+                : stops;
+            const loop = (route.path_geometry && route.path_geometry.length > 0)
+                ? route.path_geometry
+                : straightLoop;
+
+            // Arrêts numérotés
+            route.stops.forEach((st, j) => {
+                L.circleMarker([st.latitude, st.longitude], {
+                    radius: 8, color: '#ffffff', weight: 2, fillColor: color, fillOpacity: 0.9
+                }).addTo(map)
+                  .bindPopup(`<strong>${route.name}</strong><br>#${st.order} — ${st.name}`);
+            });
+
+            // Ligne de la boucle — clic = infos bus en direct
+            const popupContent = `
+                <strong>🚌 ${route.bus}</strong><br>
+                Chauffeur : ${route.driver || '—'}<br>
+                Capacité : ${route.capacity}<br>
+                Distance (route réelle) : ${route.total_distance_km} km<br>
+                Durée estimée : ~${route.estimated_duration_minutes} min<br>
+                Élèves : ${route.students_taken} pris / ${route.students_remaining} restants<br>
+                Tracé : ${route.path_source === 'osrm' ? '🛣️ routage routier (OSRM)' : '⚠️ lignes droites (repli OSRM indisponible)'}<br>
+                <strong>Itinéraire :</strong><ol>${route.stops.map(st => `<li>${st.name}</li>`).join('')}</ol>`;
+            const polyline = L.polyline(loop, { color, weight: 4, opacity: 0.85 }).addTo(map);
+            polyline.on('click', () => polyline.bindPopup(popupContent).openPopup());
+
+            // Flèches indiquant le sens de circulation : École → élèves → retour École
+            L.polylineDecorator(polyline, {
+                patterns: [{
+                    offset: 15,
+                    repeat: 120,
+                    symbol: L.Symbol.arrowHead({
+                        pixelSize: 11,
+                        polygon: false,
+                        pathOptions: { stroke: true, color: '#ffffff', weight: 2 }
+                    })
+                }]
+            }).addTo(map);
+
+            bounds.push(...loop);
+        });
+
+        if (bounds.length > 0) {
+            map.fitBounds(bounds, { padding: [40, 40] });
+        }
+
+        // ---------- Temps réel : flotte + KPI + barre latérale (toutes les 5 s) ----------
+        function updateCounters(c) {
+            if (!c) return;
+            const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+            set('live-enroute', c.buses_en_route);
+            set('live-pickup', c.pickup_rate != null ? c.pickup_rate + '%' : '—');
+            set('live-speed-alerts', c.speed_alerts);
+            set('live-unassigned', c.unassigned);
+            set('live-delayed', c.delayed_buses);
+            set('live-stale', c.stale_buses);
+            set('live-taken', c.taken);
+            set('live-remaining', c.remaining);
+            set('live-incidents', c.incidents);
+        }
+        async function refreshFleet() {
+            try {
+                const resp = await fetch('/api/school/fleet/');
+                if (!resp.ok) return;
+                const payload = await resp.json();
+                const seen = {};
+                (payload.buses || []).forEach(b => { seen[b.id] = true; upsertBusMarker(b); });
+                Object.keys(busMarkers).forEach(id => {
+                    if (!seen[id]) {
+                        map.removeLayer(busMarkers[id]);
+                        delete busMarkers[id];
+                        delete busSpeedTags[id];
+                    }
+                });
+                renderSidebar(payload.buses);
+                updateCounters(payload.counters);
+            } catch (err) { /* réseau : on réessaiera au prochain cycle */ }
+        }
+        setInterval(refreshFleet, 5000);
+    </script>
+</body>
+</html>

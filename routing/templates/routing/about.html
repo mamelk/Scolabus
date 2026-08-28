@@ -1,0 +1,162 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>À propos — Scolaloop · ESTECH</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/logo.svg' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --indigo: #4F46E5; --blue: #2563EB; --border: #e2e8f0; --muted: #64748b; --slate: #0f172a; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #eef2ff 0%, #dbeafe 55%, #e0e7ff 100%);
+            min-height: 100vh; padding: 1.5rem 1rem;
+        }
+        .container { max-width: 860px; margin: 0 auto; }
+        .nav {
+            display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;
+            background: rgba(255,255,255,0.85); backdrop-filter: blur(6px);
+            border: 1px solid rgba(226,232,240,0.9); border-radius: 16px; padding: 0.7rem 1.2rem;
+            margin-bottom: 1.4rem;
+        }
+        .nav img { height: 2.2rem; }
+        .nav a { color: var(--indigo); text-decoration: none; font-weight: 600; font-size: 0.88rem; }
+        .nav a:hover { text-decoration: underline; }
+        .hero {
+            background: linear-gradient(135deg, var(--indigo), var(--blue)); color: white;
+            border-radius: 20px; padding: 2.2rem 2rem; text-align: center; margin-bottom: 1.4rem;
+        }
+        .hero h1 { font-size: 1.7rem; font-weight: 800; }
+        .hero p { font-size: 0.95rem; opacity: 0.92; max-width: 640px; margin: 0.6rem auto 0; }
+        .panel {
+            background: white; border-radius: 18px; padding: 1.6rem 1.8rem;
+            box-shadow: 0 12px 34px rgba(79, 70, 229, 0.12); border: 1px solid rgba(226,232,240,0.8);
+            margin-bottom: 1.4rem;
+        }
+        .panel h2 {
+            font-size: 1.1rem; color: var(--slate); margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.6rem;
+        }
+        .panel h2 i { color: var(--indigo); }
+        .panel p { font-size: 0.9rem; color: #475569; line-height: 1.65; }
+        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.9rem; margin-top: 0.6rem; }
+        .feature {
+            background: #f8fafc; border: 1px solid var(--border); border-radius: 14px; padding: 1rem 1.1rem;
+        }
+        .feature i { color: var(--indigo); font-size: 1.3rem; margin-bottom: 0.5rem; display: block; }
+        .feature strong { font-size: 0.88rem; color: var(--slate); display: block; margin-bottom: 0.25rem; }
+        .feature p { font-size: 0.8rem; color: var(--muted); }
+        .estech {
+            background: linear-gradient(135deg, #0f172a, #1e293b); color: white;
+            border-radius: 18px; padding: 1.8rem 1.8rem; text-align: center; margin-bottom: 1.4rem;
+        }
+        .estech .logo-mark {
+            width: 64px; height: 64px; margin: 0 auto 0.8rem; border-radius: 16px;
+            background: linear-gradient(135deg, var(--indigo), var(--blue));
+            display: flex; align-items: center; justify-content: center; font-size: 1.8rem;
+        }
+        .estech h2 { font-size: 1.3rem; font-weight: 800; }
+        .estech .tagline { color: #a5b4fc; font-size: 0.85rem; margin: 0.3rem 0 0.9rem; }
+        .estech p { font-size: 0.9rem; color: #cbd5e1; line-height: 1.6; max-width: 640px; margin: 0 auto; }
+        .estech .pillars { display: flex; justify-content: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 1rem; }
+        .estech .pillars span {
+            font-size: 0.78rem; font-weight: 600; padding: 0.35rem 0.9rem; border-radius: 999px;
+            background: rgba(79, 70, 229, 0.35); border: 1px solid rgba(165, 180, 252, 0.4);
+        }
+        .cta { text-align: center; }
+        .btn {
+            display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.8rem 2rem;
+            background: linear-gradient(135deg, var(--indigo), var(--blue)); color: white;
+            border-radius: 999px; font-size: 0.95rem; font-weight: 700; text-decoration: none;
+            box-shadow: 0 6px 18px rgba(79, 70, 229, 0.3);
+            transition: transform 0.12s, filter 0.15s;
+        }
+        .btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
+        .btn-secondary { background: #f1f5f9; color: var(--slate); box-shadow: none; }
+        footer { text-align: center; margin-top: 1.6rem; font-size: 0.8rem; color: var(--muted); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="nav">
+            <img src="{% static 'images/logo.svg' %}" alt="Scolaloop Logo">
+            <div style="display:flex; gap:1.2rem;">
+                <a href="{% url 'routing:home' %}">Accueil</a>
+                <a href="{% url 'routing:about' %}"><strong>À propos</strong></a>
+                <a href="{% url 'routing:login' %}">Connexion</a>
+            </div>
+        </nav>
+
+        <div class="hero">
+            <h1>À propos du projet ScolaLoop</h1>
+            <p>Un système intelligent de transport scolaire : optimisation des tournées, suivi GPS en temps réel, communication parents-école et sécurité routière.</p>
+        </div>
+
+        <div class="panel">
+            <h2><i class="fa-solid fa-bullseye"></i> Notre mission</h2>
+            <p>
+                ScolaLoop numérise et optimise le transport scolaire pour les écoles, les parents et les chauffeurs.
+                Le système calcule automatiquement des tournées en boucle fermée (École → élèves → École),
+                suit chaque bus en temps réel, prévient les parents à l'approche du bus et centralise la gestion
+                des absences, des incidents et de l'entretien de la flotte.
+            </p>
+        </div>
+
+        <div class="panel">
+            <h2><i class="fa-solid fa-cubes"></i> Fonctionnalités clés</h2>
+            <div class="features">
+                <div class="feature">
+                    <i class="fa-solid fa-route"></i>
+                    <strong>Optimisation des tournées</strong>
+                    <p>VRP résolu par OR-Tools, itinéraires routiers réels OSRM.</p>
+                </div>
+                <div class="feature">
+                    <i class="fa-solid fa-satellite-dish"></i>
+                    <strong>Suivi GPS temps réel</strong>
+                    <p>Position des bus, alertes à 100 m, replay des trajets parcourus.</p>
+                </div>
+                <div class="feature">
+                    <i class="fa-solid fa-message"></i>
+                    <strong>Communication parent-école</strong>
+                    <p>Absences en un clic, SMS d'urgence, interface parent dédiée.</p>
+                </div>
+                <div class="feature">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <strong>Sécurité routière</strong>
+                    <p>Alertes d'excès de vitesse, incidents SOS, maintenance de la flotte.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="estech">
+            <div class="logo-mark">💻</div>
+            <h2>Développé par ESTECH</h2>
+            <div class="tagline">Solutions informatiques au service de votre quotidien</div>
+            <p>
+                <strong>ESTECH</strong> est une entreprise spécialisée dans la mise à disposition de solutions
+                informatiques. Elle conçoit et déploie des applications web et mobiles sur mesure pour les
+                écoles, les entreprises et les institutions, en combinant innovation, fiabilité et proximité.
+                ScolaLoop est l'une de ses réalisations, fruit d'une démarche centrée sur les besoins réels
+                des utilisateurs.
+            </p>
+            <div class="pillars">
+                <span>💡 Innovation</span>
+                <span>🔒 Fiabilité</span>
+                <span>🤝 Proximité</span>
+                <span>🚀 Accompagnement</span>
+            </div>
+        </div>
+
+        <div class="cta">
+            <a class="btn" href="{% url 'routing:login' %}">Se connecter</a>
+            <a class="btn btn-secondary" href="{% url 'routing:home' %}" style="margin-left:0.6rem;">← Retour à l'accueil</a>
+        </div>
+
+        <footer>© 2026 Scolaloop — Développé par ESTECH · Solutions informatiques</footer>
+    </div>
+</body>
+</html>

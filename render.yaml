@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: scolaloop
+    env: python
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    startCommand: gunicorn scolaloop.wsgi:application
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: scolaloop-db
+          property: connectionString
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: PYTHON_VERSION
+        value: "3.12"
+      - key: SMS_PROVIDER
+        value: "stub"
+
+databases:
+  - name: scolaloop-db
+    databaseName: scolaloop
+    user: scolaloop_user
+    plan: free

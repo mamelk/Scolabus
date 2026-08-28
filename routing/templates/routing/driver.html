@@ -1,0 +1,522 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Chauffeur — {{ bus.code_bus }}</title>
+    {% include 'routing/_pwa_head.html' %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/logo.svg' %}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-polylinedecorator/1.6.0/leaflet.polylineDecorator.min.js"></script>
+    <!-- Tailwind CSS (CDN) — preflight désactivé pour préserver les styles existants -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { corePlugins: { preflight: false } };</script>
+    <script src="{% static 'js/driver_map.js' %}"></script>
+    <script src="{% static 'js/offline_sync.js' %}"></script>
+    <script src="{% static 'js/driver_tracking.js' %}"></script>
+    <style>
+        :root { --bg: #0f172a; --panel: #1e293b; --accent: #22c55e; --warn: #f59e0b; --danger: #ef4444; --text: #f1f5f9; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        .h-10 { height: 2.5rem; }
+        .w-auto { width: auto; }
+        .logo-white { filter: brightness(0) invert(1); }
+        html, body { height: 100%; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text);
+            display: flex; flex-direction: column; min-height: 100vh;
+        }
+        .topbar {
+            background: var(--panel); padding: 0.7rem 1rem;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid #334155;
+        }
+        .topbar .title { font-size: 1.1rem; font-weight: 700; }
+        .topbar a { color: #f87171; text-decoration: none; font-size: 0.9rem; }
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; padding: 0.7rem 0.8rem; }
+        .stat {
+            background: var(--panel); border-radius: 12px; text-align: center;
+            padding: 0.9rem 0.3rem; border-top: 4px solid var(--accent);
+        }
+        .stat.remaining { border-top-color: var(--warn); }
+        .stat.total { border-top-color: #60a5fa; }
+        .stat .num { font-size: 2.3rem; font-weight: 800; line-height: 1.1; }
+        .stat .lbl { font-size: 0.8rem; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.06em; }
+        .gps-badge {
+            display: flex; align-items: center; gap: 0.5rem;
+            padding: 0.6rem 0.9rem; font-size: 0.92rem; font-weight: 700;
+            background: #111c33; color: #e2e8f0; border-bottom: 2px solid #334155;
+        }
+        .gps-badge.active { background: #052e16; color: #4ade80; border-bottom-color: var(--accent); }
+        .gps-badge.denied { background: #450a0a; color: #f87171; border-bottom-color: var(--danger); }
+        .gps-dot { width: 12px; height: 12px; border-radius: 50%; background: #64748b; display: inline-block; }
+        .gps-badge.active .gps-dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 1.6s infinite; }
+        .gps-badge.denied .gps-dot { background: var(--danger); }
+        @keyframes pulse { 50% { opacity: 0.4; } }
+        .gps-notice {
+            background: #450a0a; color: #fecaca; padding: 0.9rem 0.9rem; text-align: center;
+            font-size: 0.98rem; border-bottom: 2px solid var(--danger);
+        }
+        .conn-badge {
+            display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+            padding: 0.5rem 0.9rem; font-size: 0.88rem; font-weight: 700; text-align: center;
+            background: #111c33; color: #e2e8f0; border-bottom: 2px solid #334155;
+        }
+        .conn-badge.online { background: #052e16; color: #4ade80; border-bottom-color: var(--accent); }
+        .conn-badge.offline { background: #431407; color: #fb923c; border-bottom-color: var(--warn); }
+        .conn-badge.syncing { background: #422006; color: #fbbf24; border-bottom-color: var(--warn); }
+        .gps-notice p { margin-bottom: 0.7rem; }
+        .retry-btn {
+            padding: 0.8rem 1.4rem; font-size: 1rem; font-weight: 700;
+            background: var(--danger); color: white; border: none; border-radius: 10px; cursor: pointer;
+        }
+        .retry-btn:active { opacity: 0.85; }
+        .hidden { display: none !important; }
+        #map { flex: 1; min-height: 42vh; }
+        .voice-btn {
+            margin: 0.7rem 0.9rem; padding: 1.1rem; font-size: 1.1rem; font-weight: 700;
+            background: var(--panel); color: var(--text); border: 2px solid #334155;
+            border-radius: 14px; cursor: pointer; min-height: 3.6rem;
+        }
+        .voice-btn.on { border-color: var(--accent); color: var(--accent); }
+        .wake-badge {
+            margin: 0.6rem 0.9rem 0; padding: 0.5rem 0.8rem; border-radius: 10px;
+            background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.5);
+            color: #6ee7b7; font-size: 0.82rem; font-weight: 600; text-align: center;
+        }
+        .modal {
+            position: fixed; inset: 0; background: rgba(2, 6, 23, 0.92);
+            display: none; align-items: center; justify-content: center; z-index: 2000; padding: 1.2rem;
+        }
+        .modal.show { display: flex; }
+        .modal-box {
+            background: var(--panel); border-radius: 20px; padding: 2rem 1.6rem;
+            text-align: center; width: 100%; max-width: 420px;
+            border: 3px solid var(--accent); box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+        }
+        .modal-box .avatar { font-size: 4.5rem; margin-bottom: 0.6rem; }
+        .modal-box h2 { font-size: 1.7rem; margin-bottom: 0.2rem; }
+        .modal-box .matricule { color: #94a3b8; font-size: 1.05rem; margin-bottom: 1.4rem; }
+        .big-green {
+            width: 100%; padding: 1.3rem; font-size: 1.35rem; font-weight: 800;
+            background: var(--accent); color: #052e16; border: none; border-radius: 14px; cursor: pointer;
+            box-shadow: 0 6px 0 #15803d;
+        }
+        .big-green:active { transform: translateY(3px); box-shadow: 0 3px 0 #15803d; }
+        .cancel-btn {
+            width: 100%; margin-top: 0.8rem; padding: 0.9rem; font-size: 1rem;
+            background: transparent; color: #94a3b8; border: 1px solid #334155; border-radius: 12px; cursor: pointer;
+        }
+        .notice { padding: 1rem; text-align: center; color: #fbbf24; font-size: 1rem; }
+        .empty { padding: 2rem 1rem; text-align: center; color: #94a3b8; font-size: 1rem; }
+        .map-icon {
+            display: flex; align-items: center; justify-content: center;
+            width: 38px; height: 38px; border-radius: 50%;
+            border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+            color: white; font-size: 18px;
+        }
+        .map-icon.bus { background: #f1c40f; color: #7d6608; width: 64px; height: 64px; font-size: 30px; }
+        .map-icon.student { background: var(--warn); }
+        .map-icon.student.taken { background: var(--accent); }
+        .incident-panel {
+            margin: 0.8rem 1rem; padding: 0.9rem 1rem;
+            background: var(--panel); border-radius: 14px; border-left: 4px solid var(--warn);
+        }
+        .incident-title { font-weight: 700; font-size: 0.92rem; margin-bottom: 0.6rem; }
+        .incident-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+        .incident-btn {
+            padding: 1rem 0.6rem; border: none; border-radius: 12px;
+            font-size: 1rem; font-weight: 700; color: white; cursor: pointer; font-family: inherit;
+            transition: transform 0.1s, filter 0.15s; min-height: 3.4rem;
+        }
+        .incident-btn:active { transform: scale(0.96); }
+        .incident-btn.warn { background: var(--warn); }
+        .incident-btn.danger { background: var(--danger); }
+        .incident-btn.neutral { background: #475569; }
+        .incident-msg { margin-top: 0.6rem; font-size: 0.82rem; min-height: 0.4rem; }
+        .incident-msg.ok { color: var(--accent); }
+        .incident-msg.err { color: var(--danger); }
+        /* ---- Indicateur de vitesse instantanée (coin fixe) ---- */
+        .speed-display {
+            position: fixed; top: 5.5rem; right: 1rem; z-index: 1500;
+            background: rgba(15, 23, 42, 0.92); color: #4ade80;
+            border: 2px solid #334155; border-radius: 16px;
+            padding: 0.6rem 1rem; text-align: center; min-width: 110px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.45);
+        }
+        .speed-display .speed-num { font-size: 2.4rem; font-weight: 800; line-height: 1; }
+        .speed-display .speed-unit { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.8; }
+        .speed-display.speed-mid { color: #60a5fa; border-color: #60a5fa; }
+        .speed-display.speed-high {
+            color: #fca5a5; border-color: #ef4444;
+            animation: blinkRed 0.8s steps(2, start) infinite;
+        }
+        @keyframes blinkRed { 50% { opacity: 0.4; } }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <span class="title"><img src="{% static 'images/logo.svg' %}" alt="Scolaloop Logo" class="h-10 w-auto logo-white" style="height:1.6rem;"> {{ bus.code_bus }} — {{ request.user.username }}</span>
+        <a href="{% url 'routing:logout' %}">Déconnexion</a>
+    </header>
+
+    <!-- Indicateur de vitesse instantanée (coin fixe, mise à jour en direct) -->
+    <div id="speed-display" class="speed-display">
+        <div class="speed-num" id="speed-num">{{ bus.speed_kmh|floatformat:0 }}</div>
+        <div class="speed-unit">km/h</div>
+    </div>
+
+    <div class="stats">
+        <div class="stat">
+            <div class="num" id="stat-taken">{{ taken }}</div>
+            <div class="lbl">Pris</div>
+        </div>
+        <div class="stat remaining">
+            <div class="num" id="stat-remaining">{{ remaining }}</div>
+            <div class="lbl">Restants</div>
+        </div>
+        <div class="stat total">
+            <div class="num" id="stat-total">{{ total }}</div>
+            <div class="lbl">Total</div>
+        </div>
+    </div>
+
+    <div class="gps-badge waiting" id="gps-badge">
+        <span class="gps-dot" id="gps-dot"></span>
+        <span id="gps-text">GPS : recherche du signal…</span>
+    </div>
+    <div id="gps-notice" class="gps-notice hidden">
+        <p>Veuillez autoriser la géolocalisation dans votre navigateur pour activer le suivi du bus.</p>
+        <button class="retry-btn" id="gps-retry">📡 Autoriser / Réactiver le GPS</button>
+    </div>
+    <div id="wake-badge" class="wake-badge hidden">🔒 Écran maintenu actif (anti-verrouillage)</div>
+
+    <!-- Indicateur de connectivité / données hors-ligne en attente -->
+    <div id="conn-badge" class="conn-badge online"><span id="conn-text">🟢 En ligne</span></div>
+
+    {% if route %}
+    <div id="map"></div>
+    {% else %}
+    <div class="empty">Aucun trajet assigné à votre bus pour le moment.<br>L'affectation est automatique : la feuille de route apparaîtra dès qu'un élève sera rattaché à votre bus.</div>
+    {% endif %}
+
+    <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+        <button class="voice-btn" id="voice-toggle" style="flex:1;">🔇 Activer le guidage vocal</button>
+        <button class="voice-btn" id="follow-toggle" style="flex:1;">🎯 Suivi GPS : ON</button>
+    </div>
+
+    <!-- Panneau : signaler un incident -->
+    <div class="incident-panel">
+        <div class="incident-title">🚨 Signaler un incident</div>
+        <div class="incident-btns">
+            <button type="button" class="incident-btn warn" data-type="Embouteillage">🚗 Embouteillage</button>
+            <button type="button" class="incident-btn danger" data-type="Panne">🔧 Panne</button>
+            <button type="button" class="incident-btn danger" data-type="Accident">💥 Accident</button>
+            <button type="button" class="incident-btn neutral" data-type="Autre">📋 Autre</button>
+        </div>
+        <div id="incident-msg" class="incident-msg"></div>
+    </div>
+
+    <!-- Modale d'embarquement -->
+    <div id="pickup-modal" class="modal">
+        <div class="modal-box">
+            <div class="avatar">🎒</div>
+            <h2 id="pickup-name">—</h2>
+            <div class="matricule" id="pickup-matricule">—</div>
+            <button class="big-green" id="pickup-btn">✅ PRENDRE L'ÉLÈVE</button>
+            <button class="cancel-btn" id="pickup-cancel">Annuler</button>
+        </div>
+    </div>
+
+    {% csrf_token %}
+    {{ map_data|json_script:"map-data" }}
+
+    <script>
+        const data = JSON.parse(document.getElementById('map-data').textContent);
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        // ---------- Anti-verrouillage de l'écran (Screen Wake Lock API) ----------
+        let wakeLock = null;
+        const wakeBadge = document.getElementById('wake-badge');
+        async function requestWakeLock() {
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+                wakeLock.addEventListener('release', () => { wakeLock = null; });
+                if (wakeBadge) wakeBadge.classList.remove('hidden');
+            } catch (err) {
+                if (wakeBadge) wakeBadge.classList.add('hidden');
+            }
+        }
+        requestWakeLock();
+        // L'écran peut se verrouiller quand l'onglet repasse au premier plan.
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') requestWakeLock();
+        });
+
+        // ---------- Suivi de la carte ----------
+        let followMode = true;  // recentrage automatique sur la position du bus
+        const followBtn = document.getElementById('follow-toggle');
+        followBtn.addEventListener('click', () => {
+            followMode = !followMode;
+            followBtn.textContent = followMode ? '🎯 Suivi GPS : ON' : '🛑 Suivi GPS : OFF';
+            followBtn.classList.toggle('on', followMode);
+        });
+
+        // ---------- Synthèse vocale ----------
+        let voiceEnabled = false;
+        function speak(text, force) {
+            if ((!voiceEnabled && !force) || !('speechSynthesis' in window)) return;
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'fr-FR';
+            u.rate = 0.95;
+            speechSynthesis.cancel();
+            speechSynthesis.speak(u);
+        }
+        document.getElementById('voice-toggle').addEventListener('click', (e) => {
+            voiceEnabled = !voiceEnabled;
+            const btn = e.currentTarget;
+            btn.textContent = voiceEnabled ? '🔊 Guidage vocal actif' : '🔇 Activer le guidage vocal';
+            btn.classList.toggle('on', voiceEnabled);
+            if (voiceEnabled) speak('Guidage vocal activé.');
+        });
+
+        // ---------- État élèves ----------
+        // Les absents du jour sont exclus de la feuille de route (annonces/modales)
+        // mais restent visibles sur la carte en rouge (voir driver_map.js).
+        let students = [];
+        const studentFlags = {};  // id → {announcedApproach, modalShown} : conservé au rafraîchissement
+        function setStudents(list) {
+            students = (list || []).filter(s => !s.absent).map(s => {
+                const f = studentFlags[s.id] || {};
+                return { ...s, announcedApproach: !!f.announcedApproach, modalShown: !!f.modalShown };
+            });
+        }
+        function rememberFlags(s) {
+            studentFlags[s.id] = { announcedApproach: s.announcedApproach, modalShown: s.modalShown };
+        }
+        setStudents(data.students);
+        let currentModalStudent = null;
+        // Annonce vocale du retour à l'école (une seule fois par service).
+        let arrivalAnnounced = false;
+
+        function haversineM(lat1, lon1, lat2, lon2) {
+            const R = 6371000, toRad = x => x * Math.PI / 180;
+            const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+            const a = Math.sin(dLat / 2) ** 2
+                + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+            return 2 * R * Math.asin(Math.sqrt(a));
+        }
+
+        // ---------- Carte (driver_map.js) : marqueurs 🟢/⚪/🔴 + tracé néon ----------
+        // Marqueurs élèves : vert = en attente, gris = ramassé, rouge = absent.
+        // Tracé : jaune fluo #FFE600 (épaisseur 8, opacité 0,95) + bordure sombre.
+        const driverMap = window.ScolaloopDriverMap.init(data);
+        const map = driverMap.map;
+        const busMarker = driverMap.busMarker;
+        const studentMarkers = driverMap.markers;
+
+        // ---------- Détection d'arrivée ----------
+        function checkProximity(lat, lon) {
+            students.forEach(s => {
+                if (s.taken) return;
+                const d = haversineM(lat, lon, s.latitude, s.longitude);
+                if (d < 300 && !s.announcedApproach) {
+                    s.announcedApproach = true;
+                    rememberFlags(s);
+                    speak(`Prochain arrêt dans ${Math.round(d)} mètres : Ramassage de ${s.name.split(' ')[0]}.`);
+                }
+                if (d < 30 && !s.modalShown) {
+                    s.modalShown = true;
+                    rememberFlags(s);
+                    openPickupModal(s);
+                    speak(`Vous êtes arrivé chez ${s.name.split(' ')[0]}. Veuillez confirmer l'embarquement.`);
+                }
+            });
+        }
+
+        // ---------- GPS en temps réel ----------
+        const gpsBadge = document.getElementById('gps-badge');
+        const gpsText = document.getElementById('gps-text');
+        const gpsNotice = document.getElementById('gps-notice');
+        const gpsRetryBtn = document.getElementById('gps-retry');
+        let watchId = null;
+
+        // ---------- Vitesse instantanée (coin fixe) ----------
+        function updateSpeedDisplay(kmh) {
+            const el = document.getElementById('speed-display');
+            const num = document.getElementById('speed-num');
+            if (!el || !num || kmh == null) return;
+            num.textContent = Math.round(kmh);
+            el.className = 'speed-display'
+                + (kmh > 50 ? ' speed-high' : (kmh >= 20 ? ' speed-mid' : ''));
+        }
+
+        // Haute précision : force le composant GPS (pas l'IP/Wi-Fi), attente max 10 s,
+        // aucune position en cache.
+        const geoOptions = {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        };
+
+        function setGpsBadge(state, detail) {
+            gpsBadge.className = 'gps-badge ' + state;
+            gpsText.textContent = detail || 'GPS : recherche du signal…';
+            if (state === 'active') gpsNotice.classList.add('hidden');
+        }
+
+        // Envoie la position exacte au serveur pour mise à jour du bus en base.
+        // En cas d'échec réseau ou de délai dépassé, la coordonnée est mise en
+        // file d'attente locale (hors-ligne) puis resynchronisée automatiquement.
+        async function sendPosition(latitude, longitude, speedKmh) {
+            await window.ScolaloopTracking.sendPosition(latitude, longitude, speedKmh);
+        }
+
+        // Signaler un incident (SOS) — alerte immédiate sur le tableau de bord de l'école.
+        // Hors-ligne, l'incident est mis en file d'attente puis envoyé au retour du réseau.
+        async function reportIncident(typeIncident) {
+            const msgBox = document.getElementById('incident-msg');
+            msgBox.className = 'incident-msg';
+            msgBox.textContent = 'Envoi…';
+            const result = await window.ScolaloopTracking.reportIncident(typeIncident);
+            if (result.ok) {
+                msgBox.className = 'incident-msg ok';
+                msgBox.textContent = '✅ Incident « ' + typeIncident + ' » signalé — l\'école a été alertée.';
+                if (voiceEnabled) speak('Incident ' + typeIncident + ' signalé à l\'école.');
+            } else if (result.queued) {
+                msgBox.className = 'incident-msg err';
+                msgBox.textContent = '⚠️ Hors-ligne : incident mis en file d\'attente (' + result.pending + ' en attente) — envoi automatique au retour du réseau.';
+            } else {
+                msgBox.className = 'incident-msg err';
+                msgBox.textContent = 'Erreur lors du signalement.';
+            }
+        }
+        document.querySelectorAll('.incident-btn').forEach((btn) => {
+            btn.addEventListener('click', () => reportIncident(btn.dataset.type));
+        });
+
+        function stopGPS() {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+        }
+
+        function startGPS() {
+            if (!navigator.geolocation) {
+                setGpsBadge('denied', 'Géolocalisation non supportée par ce navigateur.');
+                return;
+            }
+            if (watchId !== null) return;
+            setGpsBadge('waiting');
+            watchId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    const { latitude, longitude, accuracy, speed } = pos.coords;
+                    setGpsBadge('active', `GPS Actif (Précision : ${Math.round(accuracy)} mètres)`);
+                    busMarker.setLatLng([latitude, longitude]);
+                    // Recentrage automatique sur la position du bus (désactivable).
+                    if (followMode) map.setView([latitude, longitude], map.getZoom(), { animate: true });
+                    checkProximity(latitude, longitude);
+                    // Retour à l'école : le téléphone parle pour inviter à se déconnecter.
+                    if (data.school && !arrivalAnnounced) {
+                        const dSchool = haversineM(latitude, longitude, data.school.latitude, data.school.longitude);
+                        if (dSchool < 50) {
+                            arrivalAnnounced = true;
+                            speak('Vous êtes arrivé à l\'école. Le trajet est terminé. Veuillez vous déconnecter pour terminer votre service.', true);
+                        }
+                    }
+                    // speed est en m/s côté navigateur → km/h.
+                    const speedKmh = speed != null ? speed * 3.6 : null;
+                    updateSpeedDisplay(speedKmh);
+                    sendPosition(latitude, longitude, speedKmh);
+                },
+                (err) => {
+                    if (err.code === err.PERMISSION_DENIED) {
+                        stopGPS();
+                        setGpsBadge('denied', 'GPS Désactivé / Permission requise');
+                        gpsNotice.classList.remove('hidden');
+                    } else if (err.code === err.POSITION_UNAVAILABLE) {
+                        setGpsBadge('denied', 'Position indisponible (signal GPS faible).');
+                    } else if (err.code === err.TIMEOUT) {
+                        setGpsBadge('waiting', 'Délai GPS dépassé. Nouvelle tentative…');
+                    }
+                },
+                geoOptions
+            );
+        }
+
+        gpsRetryBtn.addEventListener('click', () => {
+            gpsNotice.classList.add('hidden');
+            stopGPS();
+            startGPS();
+        });
+
+        startGPS();
+
+        // ---------- Modale d'embarquement ----------
+        function openPickupModal(s) {
+            currentModalStudent = s;
+            document.getElementById('pickup-name').textContent = s.name;
+            document.getElementById('pickup-matricule').textContent = s.matricule;
+            document.getElementById('pickup-modal').classList.add('show');
+        }
+        function closePickupModal() {
+            document.getElementById('pickup-modal').classList.remove('show');
+            currentModalStudent = null;
+        }
+        document.getElementById('pickup-cancel').addEventListener('click', closePickupModal);
+        document.getElementById('pickup-btn').addEventListener('click', async () => {
+            const s = currentModalStudent;
+            if (!s) return;
+            try {
+                const resp = await fetch(`/driver/pickup/${s.id}/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken },
+                });
+                const result = await resp.json();
+                if (result.ok) {
+                    s.taken = true;
+                    rememberFlags(s);
+                    // Marqueur passe en ⚪ gris (ramassé/déposé).
+                    window.ScolaloopDriverMap.setStudentState(studentMarkers[s.id], 'taken');
+                    document.getElementById('stat-taken').textContent = result.taken;
+                    document.getElementById('stat-remaining').textContent = result.remaining;
+                    document.getElementById('stat-total').textContent = result.total;
+                    closePickupModal();
+                    speak(`${s.name.split(' ')[0]} a été marqué comme présent.`);
+                } else {
+                    alert(result.error || 'Erreur lors de la confirmation.');
+                    closePickupModal();
+                }
+            } catch (err) {
+                alert('Problème réseau lors de la confirmation.');
+                closePickupModal();
+            }
+        });
+
+        // ---------- Rafraîchissement automatique de la feuille de route ----------
+        // Après une affectation + réoptimisation (ex. onboarding d'un parent),
+        // l'API reflète le nouvel itinéraire : la carte et les statistiques sont
+        // mises à jour ici dès le prochain cycle, sans recharger la page.
+        async function refreshRoute() {
+            try {
+                const resp = await fetch('/api/driver/route/');
+                if (!resp.ok) return;
+                const routeData = await resp.json();
+                setStudents(routeData.students);
+                window.ScolaloopDriverMap.updateRoute(routeData);
+                document.getElementById('stat-taken').textContent = routeData.taken;
+                document.getElementById('stat-remaining').textContent = routeData.remaining;
+                document.getElementById('stat-total').textContent = routeData.total;
+            } catch (err) {
+                // Hors-ligne ou serveur injoignable : on réessaiera au prochain cycle.
+            }
+        }
+        // Réinterroge la feuille de route toutes les 10 s : un élève nouvellement
+        // affecté (ou une absence de dernière minute) apparaît sans recharger la page.
+        setInterval(refreshRoute, 10000);
+    </script>
+</body>
+</html>

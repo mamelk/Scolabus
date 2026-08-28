@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 120" width="100%" height="100%">
+  <defs>
+    <linearGradient id="scolaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+    <linearGradient id="busGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24" />
+      <stop offset="100%" stop-color="#F59E0B" />
+    </linearGradient>
+  </defs>
+
+  <!-- Boucle / Loop (Icône) -->
+  <g transform="translate(10, 10)">
+    <!-- Circuit en boucle fléchée -->
+    <path d="M 50,20 A 30,30 0 1,1 25,65 L 18,55" fill="none" stroke="url(#scolaGrad)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+    <polygon points="15,68 30,68 22,53" fill="#2563EB" />
+
+    <!-- Silhouette Bus Scolaire au centre -->
+    <rect x="35" y="38" width="30" height="24" rx="5" fill="url(#busGrad)" />
+    <rect x="39" y="42" width="8" height="7" rx="1" fill="#1E293B" />
+    <rect x="53" y="42" width="8" height="7" rx="1" fill="#1E293B" />
+    <circle cx="43" cy="62" r="3" fill="#000" />
+    <circle cx="57" cy="62" r="3" fill="#000" />
+  </g>
+
+  <!-- Texte ScolaLoop -->
+  <text x="110" y="68" font-family="'Poppins', 'Segoe UI', sans-serif" font-weight="800" font-size="42" fill="#1E293B" letter-spacing="-1">
+    Scola<tspan fill="#2563EB">loop</tspan>
+  </text>
+
+  <!-- Point / Tagline -->
+  <circle cx="335" cy="63" r="6" fill="#F59E0B" />
+  <text x="112" y="88" font-family="'Segoe UI', sans-serif" font-weight="600" font-size="12" fill="#64748B" letter-spacing="2">
+    TRANSPORT SCOLAIRE INTELLIGENT
+  </text>
+</svg>

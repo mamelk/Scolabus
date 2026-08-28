@@ -1,0 +1,51 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Statistiques — Scolaloop</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/logo.svg' %}">
+    <style>
+        :root { --primary: #2c3e50; --accent: #27ae60; --border: #dee2e6; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f8f9fa; color: var(--primary); padding: 2rem; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; max-width: 1200px; margin-left: auto; margin-right: auto; }
+        h1 { font-size: 1.3rem; }
+        .btn { background: #34495e; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.9rem; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; max-width: 1200px; margin: 0 auto; }
+        .card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; border-top: 4px solid var(--accent); }
+        .card h2 { font-size: 1rem; margin-bottom: 0.6rem; }
+        .stat-row { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0.25rem 0; }
+        .big { font-size: 1.5rem; font-weight: 700; }
+        .progress { background: #e9ecef; border-radius: 999px; height: 10px; overflow: hidden; margin-top: 0.6rem; }
+        .progress > div { background: var(--accent); height: 100%; }
+        .empty { color: #6c757d; font-style: italic; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📊 Statistiques par bus</h1>
+        <a class="btn" href="{% url 'routing:dashboard' %}">← Tableau de bord</a>
+    </header>
+    {% if stats %}
+    <div class="stats-grid">
+        {% for st in stats %}
+        <div class="card">
+            <h2>🚌 {{ st.bus.code_bus }}</h2>
+            <div class="stat-row"><span>Chauffeur</span><span>{{ st.bus.driver_name|default:"—" }}</span></div>
+            <div class="stat-row"><span>Capacité</span><span>{{ st.bus.capacity }}</span></div>
+            <div class="stat-row"><span>Routes</span><span>{{ st.routes|length }}</span></div>
+            <div class="stat-row"><span>Élèves assignés</span><span class="big">{{ st.assigned }}</span></div>
+            <div class="stat-row"><span>Pris</span><span>{{ st.taken }}</span></div>
+            <div class="stat-row"><span>Restants</span><span>{{ st.remaining }}</span></div>
+            <div class="stat-row"><span>Taux de ramassage</span><span>{{ st.pickup_rate }}%</span></div>
+            <div class="progress"><div style="width: {{ st.pickup_rate }}%;"></div></div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty" style="text-align:center;">Aucun bus enregistré.</p>
+    {% endif %}
+</body>
+</html>

@@ -1,0 +1,153 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title }} — Scolaloop</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/logo.svg' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --indigo: #4F46E5; --blue: #2563EB; --border: #e2e8f0; --muted: #64748b; --slate: #0f172a; --danger: #dc2626; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #eef2ff 0%, #dbeafe 55%, #e0e7ff 100%);
+            min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem;
+        }
+        .card {
+            background: white; border-radius: 20px; padding: 2.2rem 2.4rem;
+            width: 100%; max-width: 480px;
+            box-shadow: 0 25px 60px rgba(79, 70, 229, 0.16);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .logo { text-align: center; margin-bottom: 1.1rem; }
+        .logo img { height: 2.7rem; }
+        h1 { font-size: 1.25rem; text-align: center; color: var(--slate); font-weight: 700; margin-bottom: 0.25rem; }
+        .sub { text-align: center; font-size: 0.83rem; color: var(--muted); margin-bottom: 1.4rem; }
+        .field { margin-bottom: 0.95rem; }
+        .field label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--slate); margin-bottom: 0.32rem; }
+        .input-wrap { position: relative; }
+        .input-wrap i {
+            position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%);
+            color: #94a3b8; font-size: 0.9rem; transition: color 0.15s; pointer-events: none;
+        }
+        .input-wrap:focus-within i { color: var(--indigo); }
+        .input-wrap input {
+            width: 100%; padding: 0.68rem 0.9rem 0.68rem 2.45rem;
+            border: 1.5px solid var(--border); border-radius: 12px;
+            font-size: 0.92rem; font-family: inherit; background: #fbfdff;
+            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+        }
+        .input-wrap input:hover { border-color: #c7d2fe; }
+        .input-wrap input:focus {
+            outline: none; border-color: var(--indigo); background: #fff;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+        }
+        .errors { color: var(--danger); font-size: 0.75rem; margin-top: 0.28rem; }
+        .non-field-errors {
+            background: #fef2f2; border: 1px solid #fecaca; color: var(--danger);
+            padding: 0.6rem 0.9rem; border-radius: 10px; font-size: 0.82rem; margin-bottom: 1rem;
+        }
+        .note {
+            background: #eef2ff; border: 1px solid #c7d2fe; color: #3730a3;
+            padding: 0.6rem 0.9rem; border-radius: 10px; font-size: 0.78rem; margin-bottom: 1.1rem; line-height: 1.5;
+        }
+        .actions { display: flex; gap: 0.7rem; margin-top: 1.2rem; }
+        .btn {
+            flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+            background: linear-gradient(135deg, var(--indigo), var(--blue));
+            color: white; border: none; padding: 0.8rem 1rem; border-radius: 12px;
+            font-size: 0.92rem; font-weight: 700; font-family: inherit; cursor: pointer; text-decoration: none;
+            box-shadow: 0 6px 18px rgba(79, 70, 229, 0.3);
+            transition: transform 0.1s, box-shadow 0.15s, filter 0.15s;
+        }
+        .btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
+        .btn:active { transform: translateY(1px) scale(0.99); box-shadow: 0 2px 8px rgba(79,70,229,0.3); }
+        .btn-secondary { background: #f1f5f9; color: var(--slate); box-shadow: none; }
+        .btn-secondary:hover { background: #e2e8f0; filter: none; }
+        .back-link { display: block; text-align: center; margin-top: 1.1rem; font-size: 0.83rem; color: var(--muted); text-decoration: none; }
+        .back-link:hover { color: var(--indigo); }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="logo"><img src="{% static 'images/logo.svg' %}" alt="Scolaloop Logo"></div>
+        <h1>{{ title }}</h1>
+        <p class="sub">Le domicile GPS de l'élève sera défini par le parent à sa première connexion.</p>
+
+        {% if form.non_field_errors %}
+            <div class="non-field-errors">{{ form.non_field_errors|striptags }}</div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="note">ℹ️ À la première connexion, le parent change le mot de passe (défaut : le matricule) puis positionne le domicile sur une carte.</div>
+
+            <div class="field">
+                <label for="{{ form.matricule.id_for_label }}">{{ form.matricule.label }}</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-id-badge"></i>
+                    {{ form.matricule }}
+                </div>
+                {% if form.matricule.errors %}<div class="errors">{{ form.matricule.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div class="field">
+                <label for="{{ form.nom.id_for_label }}">{{ form.nom.label }}</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-user"></i>
+                    {{ form.nom }}
+                </div>
+                {% if form.nom.errors %}<div class="errors">{{ form.nom.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div class="field">
+                <label for="{{ form.postnom.id_for_label }}">{{ form.postnom.label }}</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-user"></i>
+                    {{ form.postnom }}
+                </div>
+                {% if form.postnom.errors %}<div class="errors">{{ form.postnom.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div class="field">
+                <label for="{{ form.prenom.id_for_label }}">{{ form.prenom.label }}</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-user-graduate"></i>
+                    {{ form.prenom }}
+                </div>
+                {% if form.prenom.errors %}<div class="errors">{{ form.prenom.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div class="field">
+                <label for="{{ form.address.id_for_label }}">{{ form.address.label }}</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-location-dot"></i>
+                    {{ form.address }}
+                </div>
+                {% if form.address.errors %}<div class="errors">{{ form.address.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div class="field">
+                <label for="{{ form.parent_phone.id_for_label }}">{{ form.parent_phone.label }}</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-phone"></i>
+                    {{ form.parent_phone }}
+                </div>
+                {% if form.parent_phone.errors %}<div class="errors">{{ form.parent_phone.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div class="actions">
+                <a class="btn btn-secondary" href="{% url 'routing:dashboard' %}">← Retour</a>
+                <button type="submit" class="btn"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button>
+            </div>
+        </form>
+
+        <a class="back-link" href="{% url 'routing:dashboard' %}">Retour au tableau de bord</a>
+    </div>
+</body>
+</html>

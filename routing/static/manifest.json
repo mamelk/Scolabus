@@ -1,0 +1,20 @@
+{
+  "name": "Scolaloop — Transport Scolaire",
+  "short_name": "Scolaloop",
+  "description": "Suivi des bus scolaires en temps réel : chauffeurs, parents et écoles, même hors-ligne.",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/static/images/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
