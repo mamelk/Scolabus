@@ -147,6 +147,11 @@ OSRM_BASE_URL = os.environ.get(
 )
 OSRM_TIMEOUT_SECONDS = int(os.environ.get('OSRM_TIMEOUT_SECONDS', '45'))
 
+# Rayon de regroupement des élèves en arrêts communs (mètres).
+# Deux élèves domiciliés à moins de CLUSTER_RADIUS m l'un de l'autre
+# partagent le même arrêt de bus (le chauffeur ne s'arrête qu'une fois).
+CLUSTER_RADIUS_METERS = int(os.environ.get('CLUSTER_RADIUS_METERS', '200'))
+
 
 # Notification SMS aux parents (alerte d'approche du bus < 100 m)
 # SMS_PROVIDER = 'stub' (défaut : journalise seulement) | 'twilio' | 'africastalking'

@@ -19,11 +19,18 @@ from ortools.constraint_solver import pywrapcp, routing_enums_pb2
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+import os
+
 from .models import Absence, Bus, BusStop, GPSLog, Route, RouteStop, School, Student
 
 EARTH_RADIUS_KM = 6371.0088
 AVERAGE_SPEED_KMH = 30.0  # vitesse moyenne de circulation (km/h)
 logger = logging.getLogger(__name__)
+
+# Rayon de regroupement des élèves en arrêts communs (mètres).
+# Deux élèves domiciliés à moins de CLUSTER_RADIUS m l'un de l'autre
+# partagent le même arrêt de bus (le chauffeur ne s'arrête qu'une fois).
+CLUSTER_RADIUS_METERS = int(os.environ.get('CLUSTER_RADIUS_METERS', '200'))
 
 
 # Session HTTP réutilisée avec nouvelles tentatives (le serveur public OSRM
@@ -66,6 +73,82 @@ def haversine_km(lat1, lon1, lat2, lon2):
         + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2) ** 2
     )
     return 2 * EARTH_RADIUS_KM * math.asin(math.sqrt(a))
+
+
+# ---------------------------------------------------------------- Regroupement spatial des élèves
+
+
+def _haversine_m(lat1, lon1, lat2, lon2):
+    """Distance orthodromique entre deux points GPS, en mètres."""
+    return haversine_km(lat1, lon1, lat2, lon2) * 1000
+
+
+def cluster_students_by_proximity(students, radius_meters=None):
+    """Regroupe les élèves par proximité géographique en arrêts communs.
+
+    Algorithme glouton (greedy clustering) :
+    1. Pour chaque élève non encore groupé, on cherche tous les voisins
+       dans un rayon de `radius_meters` mètres.
+    2. Un arrêt commun (BusStop) est créé au centroïde du groupe.
+    3. Tous les élèves du groupe partagent le même arrêt.
+
+    Retourne une liste de clusters, chacun étant un dict :
+        {
+            'centroid': (latitude, longitude),
+            'students': [Student, ...],
+            'radius_m': float,  # rayon effectif du groupe (distance max au centroïde)
+        }
+    """
+    if radius_meters is None:
+        radius_meters = CLUSTER_RADIUS_METERS
+    radius_km = radius_meters / 1000.0
+
+    remaining = list(students)
+    clusters = []
+
+    while remaining:
+        # Prendre le premier élève restant comme graine du cluster
+        seed = remaining[0]
+        group = [seed]
+        seed_lat, seed_lon = seed.latitude, seed.longitude
+
+        # Trouver tous les voisins dans le rayon
+        neighbors = []
+        for s in remaining[1:]:
+            dist = _haversine_m(seed_lat, seed_lon, s.latitude, s.longitude)
+            if dist <= radius_meters:
+                neighbors.append((dist, s))
+
+        # Ajouter les voisins au groupe (triés par distance croissante)
+        neighbors.sort(key=lambda x: x[0])
+        for dist, s in neighbors:
+            # Vérifier aussi la distance au centroïde du groupe en cours
+            group_lat = sum(st.latitude for st in group) / len(group)
+            group_lon = sum(st.longitude for st in group) / len(group)
+            if _haversine_m(group_lat, group_lon, s.latitude, s.longitude) <= radius_meters:
+                group.append(s)
+
+        # Retirer tous les élèves du groupe de la liste restante
+        group_ids = {s.pk for s in group}
+        remaining = [s for s in remaining if s.pk not in group_ids]
+
+        # Calculer le centroïde du groupe
+        centroid_lat = sum(s.latitude for s in group) / len(group)
+        centroid_lon = sum(s.longitude for s in group) / len(group)
+
+        # Rayon effectif : distance max entre le centroïde et un membre du groupe
+        max_radius = max(
+            _haversine_m(centroid_lat, centroid_lon, s.latitude, s.longitude)
+            for s in group
+        ) if len(group) > 1 else 0.0
+
+        clusters.append({
+            'centroid': (centroid_lat, centroid_lon),
+            'students': group,
+            'radius_m': round(max_radius, 1),
+        })
+
+    return clusters
 
 
 # ---------------------------------------------------------------- Affectation automatique des élèves
@@ -184,10 +267,21 @@ def _build_route(school, bus, ordered, route=None):
     (is_taken / parent_notified restent inchangés : un recalcul en cours de
     journée ne perd jamais la progression du chauffeur).
 
+    Les élèves proches géographiquement (dans un rayon de CLUSTER_RADIUS_METERS)
+    sont regroupés en un seul arrêt commun : le chauffeur ne s'arrête qu'une
+    fois pour ramasser tous les élèves du groupe.
+
     Retourne l'instance Route.
     """
     depot = (school.latitude, school.longitude)
-    ordered_points = [depot] + [(s.latitude, s.longitude) for s in ordered] + [depot]
+
+    # --- Regroupement spatial : un arrêt par zone, pas un arrêt par élève ---
+    clusters = cluster_students_by_proximity(ordered)
+    # Tri des clusters par distance au dépôt (ordre optimal de passage)
+    clusters.sort(key=lambda c: haversine_km(depot[0], depot[1], c['centroid'][0], c['centroid'][1]))
+
+    # Points de passage : dépôt → centroïdes des clusters → dépôt
+    ordered_points = [depot] + [c['centroid'] for c in clusters] + [depot]
     total_km = sum(
         haversine_km(*ordered_points[i], *ordered_points[i + 1])
         for i in range(len(ordered_points) - 1)
@@ -216,23 +310,40 @@ def _build_route(school, bus, ordered, route=None):
                 "students_remaining",
             ]
         )
-    for order, student in enumerate(ordered, start=1):
+
+    # --- Création des arrêts groupés ---
+    all_students_update = []
+    for order, cluster in enumerate(clusters, start=1):
+        centroid_lat, centroid_lon = cluster['centroid']
+        n_students = len(cluster['students'])
+        # Nom de l'arrêt : "Arrêt Zone 1 (3 élèves)" ou "Arrêt Dupont (1 élève)"
+        if n_students > 1:
+            stop_name = f"Arrêt Zone {order} ({n_students} élèves)"
+        else:
+            s = cluster['students'][0]
+            stop_name = f"Arrêt {s.prenom} {s.nom}"
+
         stop, _ = BusStop.objects.get_or_create(
-            name=f"Arrêt {student.prenom} {student.nom}",
+            name=stop_name,
             defaults={
-                "latitude": student.latitude,
-                "longitude": student.longitude,
+                "latitude": centroid_lat,
+                "longitude": centroid_lon,
             },
         )
-        # L'élève est la source de vérité : synchronise les coordonnées de l'arrêt.
-        if stop.latitude != student.latitude or stop.longitude != student.longitude:
-            stop.latitude = student.latitude
-            stop.longitude = student.longitude
+        # Synchroniser les coordonnées si le centroïde a changé
+        if stop.latitude != centroid_lat or stop.longitude != centroid_lon:
+            stop.latitude = centroid_lat
+            stop.longitude = centroid_lon
             stop.save(update_fields=["latitude", "longitude"])
         RouteStop.objects.create(route=route, stop=stop, order=order)
-        student.assigned_route = route
-        student.overcapacity_alert = False
-    Student.objects.bulk_update(ordered, ["assigned_route", "overcapacity_alert"])
+
+        # Tous les élèves du cluster sont rattachés au trajet
+        for student in cluster['students']:
+            student.assigned_route = route
+            student.overcapacity_alert = False
+            all_students_update.append(student)
+
+    Student.objects.bulk_update(all_students_update, ["assigned_route", "overcapacity_alert"])
     return route
 
 
@@ -890,28 +1001,41 @@ def reoptimize_bus_route(bus, timeout=12):
             students_remaining=sum(1 for s in ordered if not s.is_taken),
         )
 
+    # --- Regroupement spatial ---
+    clusters = cluster_students_by_proximity(ordered)
+    clusters.sort(key=lambda c: haversine_km(depot[0], depot[1], c['centroid'][0], c['centroid'][1]))
+
     with transaction.atomic():
         # Réordonne les arrêts du trajet existant (ou en crée).
         route.stops.all().delete()
-        for order, student in enumerate(ordered, start=1):
+        all_students_update = []
+        for order, cluster in enumerate(clusters, start=1):
+            centroid_lat, centroid_lon = cluster['centroid']
+            n_students = len(cluster['students'])
+            if n_students > 1:
+                stop_name = f"Arrêt Zone {order} ({n_students} élèves)"
+            else:
+                s = cluster['students'][0]
+                stop_name = f"Arrêt {s.prenom} {s.nom}"
             stop, _ = BusStop.objects.get_or_create(
-                name=f"Arrêt {student.prenom} {student.nom}",
+                name=stop_name,
                 defaults={
-                    "latitude": student.latitude,
-                    "longitude": student.longitude,
+                    "latitude": centroid_lat,
+                    "longitude": centroid_lon,
                 },
             )
-            # L'élève est la source de vérité : synchronise les coordonnées de l'arrêt.
-            if stop.latitude != student.latitude or stop.longitude != student.longitude:
-                stop.latitude = student.latitude
-                stop.longitude = student.longitude
+            if stop.latitude != centroid_lat or stop.longitude != centroid_lon:
+                stop.latitude = centroid_lat
+                stop.longitude = centroid_lon
                 stop.save(update_fields=["latitude", "longitude"])
             RouteStop.objects.create(route=route, stop=stop, order=order)
+            for student in cluster['students']:
+                student.assigned_route = route
+                all_students_update.append(student)
+        Student.objects.bulk_update(all_students_update, ["assigned_route"])
 
         # Boucle fermée École → arrêts → École + compteurs de ramassage.
-        ordered_points = [depot] + [
-            (s.latitude, s.longitude) for s in ordered
-        ] + [depot]
+        ordered_points = [depot] + [c['centroid'] for c in clusters] + [depot]
         total_km = sum(
             haversine_km(*ordered_points[i], *ordered_points[i + 1])
             for i in range(len(ordered_points) - 1)
@@ -930,7 +1054,7 @@ def reoptimize_bus_route(bus, timeout=12):
         )
 
     # Itinéraire routier réel (OSRM, délai court) — repli sur les lignes droites.
-    waypoints = [depot] + [(s.latitude, s.longitude) for s in ordered] + [depot]
+    waypoints = [depot] + [c['centroid'] for c in clusters] + [depot]
     road = get_road_route_geometry(waypoints, timeout=timeout)
     if road:
         route.path_geometry = road["geometry"]
