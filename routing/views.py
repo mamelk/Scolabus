@@ -340,9 +340,8 @@ def dashboard_view(request):
         .order_by("-created_at")
     )
 
-    # Marqueurs carte : seuls les bus dont le CHAUFFEUR est connecté apparaissent
-    # en direct (un chauffeur déconnecté ou hors-ligne depuis plus de 5 minutes
-    # disparaît de la carte). Position en direct si GPS reçu, sinon base (école).
+    # Marqueurs carte : tous les bus actifs apparaissent sur la carte.
+    # Chauffeur connecte -> position GPS en direct ; sinon -> position de base (ecole).
     bus_markers = []
     delayed_buses = 0
     speed_alerts = 0
@@ -354,8 +353,6 @@ def dashboard_view(request):
             b.last_position_at is not None
             and (now - b.last_position_at).total_seconds() > 300
         )
-        if not b.driver_connected or stale:
-            continue
         route = b.routes.order_by("-created_at").first()
         if b.last_latitude is not None and b.last_longitude is not None:
             lat, lon = b.last_latitude, b.last_longitude
@@ -386,6 +383,7 @@ def dashboard_view(request):
                 "delay_minutes": delay_minutes,
                 "speed_kmh": round(speed_kmh, 1),
                 "is_speeding": speed_kmh > SPEED_LIMIT_KMH,
+                "driver_connected": b.driver_connected,
             }
         )
 
