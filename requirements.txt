@@ -1,25 +1,19 @@
-absl-py==2.5.0
-asgiref==3.12.1
-certifi==2026.7.22
-charset-normalizer==3.5.1
+# Django
 Django==6.1
-et_xmlfile==2.0.0
-idna==3.18
-immutabledict==4.3.1
-numpy==2.5.2
-openpyxl==3.1.5
-ortools==9.15.6755
-pandas==3.0.5
-protobuf==6.33.6
-python-dateutil==2.9.0.post0
-requests==2.34.2
-six==1.17.0
-sqlparse==0.6.0
-typing_extensions==4.16.0
-tzdata==2026.3
-urllib3==2.7.0
-reportlab==5.0.0
 dj-database-url==2.3.0
 gunicorn==23.0.0
 psycopg2-binary==2.9.10
 whitenoise==6.9.0
+
+# Route optimization
+ortools==9.15.6755
+
+# Data / Import-Export
+openpyxl==3.1.5
+pandas==3.0.5
+
+# HTTP (OSRM API, SMS)
+requests==2.34.2
+
+# PDF generation
+reportlab==5.0.0

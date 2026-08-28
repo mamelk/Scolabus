@@ -39,8 +39,12 @@ wheels/
 
 # Django
 *.log
+runserver.log
 staticfiles/
 media/
+
+# Scripts de test
+scripts/
 
 # IDE / éditeurs
 .idea/
