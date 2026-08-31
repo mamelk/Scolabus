@@ -4,7 +4,29 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Scolaloop — Système de Transport Scolaire</title>
+    <title>Scolaloop — Système de Transport Scolaire Intelligent | ESTECH</title>
+    <meta name="description" content="Scolaloop optimise les trajets de bus scolaires en temps réel : tournées en boucle fermée, itinéraires routiers OSRM, suivi GPS et gestion des élèves. Développé par ESTECH.">
+    <meta name="keywords" content="transport scolaire, bus scolaire, tournées bus, suivi GPS, optimisation tournées, application scolaire, ESTECH, Scolaloop">
+    <meta name="author" content="ESTECH">
+    <meta name="robots" content="index, follow">
+    {% if GOOGLE_SITE_VERIFICATION %}
+    <meta name="google-site-verification" content="{{ GOOGLE_SITE_VERIFICATION }}">
+    {% endif %}
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ SITE_URL }}/">
+    <meta property="og:title" content="Scolaloop — Système de Transport Scolaire Intelligent">
+    <meta property="og:description" content="Optimisez les trajets de bus scolaires en temps réel : tournées en boucle fermée, itinéraires routiers OSRM, suivi GPS et gestion des élèves.">
+    <meta property="og:image" content="{% static 'images/logo.svg' %}">
+    <meta property="og:locale" content="fr_FR">
+    <meta property="og:site_name" content="Scolaloop">
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Scolaloop — Système de Transport Scolaire Intelligent">
+    <meta name="twitter:description" content="Optimisez les trajets de bus scolaires en temps réel : tournées en boucle fermée, itinéraires routiers OSRM, suivi GPS et gestion des élèves.">
+    <meta name="twitter:image" content="{% static 'images/logo.svg' %}">
+    <!-- Canonical -->
+    <link rel="canonical" href="{{ SITE_URL }}/">
     {% include 'routing/_pwa_head.html' %}
     <link rel="icon" type="image/svg+xml" href="{% static 'images/logo.svg' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -161,5 +183,36 @@
     </section>
 
     <footer>© 2026 Scolaloop — Système de Transport Scolaire Intelligent · <a href="{% url 'routing:about' %}" style="color:inherit;">À propos</a> · Développé par <strong>ESTECH</strong></footer>
+
+    <!-- Structured Data JSON-LD pour Google -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Scolaloop",
+        "url": "{{ SITE_URL }}",
+        "description": "Système intelligent de transport scolaire : optimisation des tournées, suivi GPS en temps réel, communication parents-école et sécurité routière.",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Web",
+        "author": {
+            "@type": "Organization",
+            "name": "ESTECH",
+            "url": "{{ SITE_URL }}/apropos/"
+        },
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "inLanguage": "fr",
+        "featureList": [
+            "Optimisation des tournées de bus scolaires",
+            "Suivi GPS en temps réel",
+            "Communication parents-école",
+            "Gestion des absences",
+            "Alertes de sécurité routière"
+        ]
+    }
+    </script>
 </body>
 </html>

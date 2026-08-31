@@ -4,7 +4,29 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>À propos — Scolaloop · ESTECH</title>
+    <title>{{ page_title }}</title>
+    <meta name="description" content="{{ page_description }}">
+    <meta name="keywords" content="{{ SITE_KEYWORDS }}">
+    <meta name="author" content="ESTECH">
+    <meta name="robots" content="index, follow">
+    {% if GOOGLE_SITE_VERIFICATION %}
+    <meta name="google-site-verification" content="{{ GOOGLE_SITE_VERIFICATION }}">
+    {% endif %}
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ page_url }}">
+    <meta property="og:title" content="{{ page_title }}">
+    <meta property="og:description" content="{{ page_description }}">
+    <meta property="og:image" content="{% static 'images/logo.svg' %}">
+    <meta property="og:locale" content="fr_FR">
+    <meta property="og:site_name" content="{{ SITE_NAME }}">
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ page_title }}">
+    <meta name="twitter:description" content="{{ page_description }}">
+    <meta name="twitter:image" content="{% static 'images/logo.svg' %}">
+    <!-- Canonical -->
+    <link rel="canonical" href="{{ page_url }}">
     <link rel="icon" type="image/svg+xml" href="{% static 'images/logo.svg' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -158,5 +180,22 @@
 
         <footer>© 2026 Scolaloop — Développé par ESTECH · Solutions informatiques</footer>
     </div>
+
+    <!-- Structured Data JSON-LD pour Google -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "AboutPage",
+        "name": "À propos — Scolaloop",
+        "url": "{{ page_url }}",
+        "description": "{{ page_description }}",
+        "mainEntity": {
+            "@type": "Organization",
+            "name": "ESTECH",
+            "description": "Solutions informatiques au service de votre quotidien",
+            "knowsAbout": ["Transport scolaire", "Applications web", "Solutions informatiques"]
+        }
+    }
+    </script>
 </body>
 </html>

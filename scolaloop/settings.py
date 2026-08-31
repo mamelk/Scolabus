@@ -169,3 +169,18 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+
+# ---------------------------------------------------------------- SEO / Référencement Google
+SITE_NAME = os.environ.get('SITE_NAME', 'Scolaloop')
+SITE_URL = os.environ.get('SITE_URL', 'https://scolaloop.onrender.com')
+SITE_DESCRIPTION = (
+    'Scolaloop — Système intelligent de transport scolaire : optimisation des tournées, '
+    'suivi GPS en temps réel, communication parents-école et sécurité routière. '
+    'Développé par ESTECH.'
+)
+SITE_KEYWORDS = (
+    'transport scolaire, bus scolaire, tournées bus, suivi GPS, '
+    'optimisation tournées, application scolaire, ESTECH, Scolaloop'
+)
+GOOGLE_SITE_VERIFICATION = os.environ.get('GOOGLE_SITE_VERIFICATION', '')

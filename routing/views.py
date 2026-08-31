@@ -163,6 +163,71 @@ def _ensure_driver_account(bus):
 # ---------------------------------------------------------------- PWA (hors-ligne)
 
 
+# ---------------------------------------------------------------- SEO : robots.txt & sitemap.xml
+
+
+def robots_txt_view(request):
+    """robots.txt — indique aux moteurs de recherche quelles pages indexer."""
+    from django.conf import settings
+    content = (
+        f"User-agent: *\n"
+        f"Allow: /\n"
+        f"Disallow: /admin/\n"
+        f"Disallow: /dashboard/\n"
+        f"Disallow: /driver/\n"
+        f"Disallow: /parent/\n"
+        f"Disallow: /login/\n"
+        f"Disallow: /logout/\n"
+        f"Disallow: /import/\n"
+        f"Disallow: /export/\n"
+        f"Disallow: /api/\n"
+        f"Disallow: /sw.js\n"
+        f"\nSitemap: {settings.SITE_URL}/sitemap.xml\n"
+    )
+    return HttpResponse(content, content_type="text/plain; charset=utf-8")
+
+
+def sitemap_xml_view(request):
+    """sitemap.xml — toutes les pages publiques indexables par Google."""
+    from django.conf import settings
+    from django.urls import reverse
+
+    base = settings.SITE_URL
+    pages = [
+        {
+            'loc': f"{base}/",
+            'priority': '1.0',
+            'changefreq': 'daily',
+        },
+        {
+            'loc': f"{base}{reverse('routing:about')}",
+            'priority': '0.8',
+            'changefreq': 'monthly',
+        },
+        {
+            'loc': f"{base}{reverse('routing:login')}",
+            'priority': '0.5',
+            'changefreq': 'monthly',
+        },
+        {
+            'loc': f"{base}{reverse('routing:register_school')}",
+            'priority': '0.6',
+            'changefreq': 'monthly',
+        },
+    ]
+
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for page in pages:
+        xml += '  <url>\n'
+        xml += f'    <loc>{page["loc"]}</loc>\n'
+        xml += f'    <changefreq>{page["changefreq"]}</changefreq>\n'
+        xml += f'    <priority>{page["priority"]}</priority>\n'
+        xml += '  </url>\n'
+    xml += '</urlset>'
+    return HttpResponse(xml, content_type='application/xml; charset=utf-8')
+
+
 def pwa_service_worker(request):
     """Sert le Service Worker à la racine (/sw.js).
 
@@ -182,14 +247,41 @@ def pwa_service_worker(request):
     return response
 
 
+def _seo_context(request, title=None, description=None, url_path='/'):
+    """Contexte commun SEO pour toutes les pages publiques."""
+    from django.conf import settings
+    return {
+        'SITE_NAME': settings.SITE_NAME,
+        'SITE_URL': settings.SITE_URL,
+        'SITE_DESCRIPTION': settings.SITE_DESCRIPTION,
+        'SITE_KEYWORDS': settings.SITE_KEYWORDS,
+        'GOOGLE_SITE_VERIFICATION': settings.GOOGLE_SITE_VERIFICATION,
+        'page_title': title or settings.SITE_NAME,
+        'page_description': description or settings.SITE_DESCRIPTION,
+        'page_url': f"{settings.SITE_URL}{url_path}",
+    }
+
+
 def home_view(request):
     """Page d'accueil publique du système de transport scolaire."""
-    return render(request, "routing/home.html")
+    ctx = _seo_context(
+        request,
+        title='Scolaloop — Système de Transport Scolaire Intelligent | ESTECH',
+        description='Scolaloop optimise les trajets de bus scolaires en temps réel : tournées en boucle fermée, itinéraires routiers OSRM, suivi GPS et gestion des élèves. Développé par ESTECH.',
+        url_path='/',
+    )
+    return render(request, "routing/home.html", ctx)
 
 
 def about_view(request):
     """Page « À propos » : présentation du projet et de l'entreprise ESTECH."""
-    return render(request, "routing/about.html")
+    ctx = _seo_context(
+        request,
+        title='À propos — Scolaloop · ESTECH',
+        description='Découvrez ScolaLoop, le système intelligent de transport scolaire développé par ESTECH : optimisation des tournées, suivi GPS en temps réel et sécurité routière.',
+        url_path='/apropos/',
+    )
+    return render(request, "routing/about.html", ctx)
 
 
 def login_view(request):
@@ -245,6 +337,13 @@ def register_school_view(request):
     if request.user.is_authenticated and not request.user.is_superuser:
         return redirect("routing:dashboard")
 
+    ctx = _seo_context(
+        request,
+        title='Créer une École — Scolaloop | Inscription Transport Scolaire',
+        description='Inscrivez votre école sur Scolaloop et commencez à optimiser vos trajets de bus scolaires.',
+        url_path='/register-school/',
+    )
+
     form = SchoolRegisterForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         school = form.save()
@@ -264,7 +363,7 @@ def register_school_view(request):
         if request.user.is_superuser:
             return redirect("routing:schools_admin")
         return redirect("routing:dashboard")
-    return render(request, "routing/register_school.html", {"form": form})
+    return render(request, "routing/register_school.html", {"form": form, **ctx})
 
 
 @login_required

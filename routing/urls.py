@@ -6,6 +6,9 @@ app_name = "routing"
 
 urlpatterns = [
     path("", views.home_view, name="home"),
+    # SEO : robots.txt et sitemap.xml
+    path("robots.txt", views.robots_txt_view, name="robots_txt"),
+    path("sitemap.xml", views.sitemap_xml_view, name="sitemap_xml"),
     # PWA : Service Worker servi à la racine (portée "/")
     path("sw.js", views.pwa_service_worker, name="service_worker"),
     path("apropos/", views.about_view, name="about"),
