@@ -91,6 +91,7 @@
         <span class="logo"><img src="{% static 'images/logo.svg' %}" alt="Scolaloop Logo" class="h-10 w-auto logo-white"></span>
         <span class="user" style="display:flex; align-items:center; gap:1rem;">
             <a href="{% url 'routing:about' %}" style="color:#f1c40f;">À propos</a>
+            <a href="{% url 'routing:manual' %}" style="color:#f1c40f;">Manuel</a>
             {% if user.is_authenticated %}
             Connecté : {{ user.username }} · <a href="{% url 'routing:logout' %}" style="color:#f1c40f;">Déconnexion</a>
             {% else %}

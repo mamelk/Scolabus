@@ -1,0 +1,347 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page_title }}</title>
+    <meta name="description" content="{{ page_description }}">
+    <meta name="keywords" content="{{ SITE_KEYWORDS }}">
+    <meta name="author" content="ESTECH">
+    <meta name="robots" content="index, follow">
+    {% if GOOGLE_SITE_VERIFICATION %}
+    <meta name="google-site-verification" content="{{ GOOGLE_SITE_VERIFICATION }}">
+    {% endif %}
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ page_url }}">
+    <meta property="og:title" content="{{ page_title }}">
+    <meta property="og:description" content="{{ page_description }}">
+    <meta property="og:image" content="{% static 'images/logo.svg' %}">
+    <meta property="og:locale" content="fr_FR">
+    <meta property="og:site_name" content="{{ SITE_NAME }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ page_title }}">
+    <meta name="twitter:description" content="{{ page_description }}">
+    <meta name="twitter:image" content="{% static 'images/logo.svg' %}">
+    <link rel="canonical" href="{{ page_url }}">
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/logo.svg' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --indigo: #4F46E5; --blue: #2563EB; --border: #e2e8f0; --muted: #64748b; --slate: #0f172a; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #eef2ff 0%, #dbeafe 55%, #e0e7ff 100%);
+            min-height: 100vh; padding: 1.5rem 1rem;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        .nav {
+            display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;
+            background: rgba(255,255,255,0.85); backdrop-filter: blur(6px);
+            border: 1px solid rgba(226,232,240,0.9); border-radius: 16px; padding: 0.7rem 1.2rem;
+            margin-bottom: 1.4rem;
+        }
+        .nav img { height: 2.2rem; }
+        .nav a { color: var(--indigo); text-decoration: none; font-weight: 600; font-size: 0.88rem; }
+        .nav a:hover { text-decoration: underline; }
+        .hero {
+            background: linear-gradient(135deg, var(--indigo), var(--blue)); color: white;
+            border-radius: 20px; padding: 2.2rem 2rem; text-align: center; margin-bottom: 1.4rem;
+        }
+        .hero h1 { font-size: 1.7rem; font-weight: 800; }
+        .hero p { font-size: 0.95rem; opacity: 0.92; max-width: 640px; margin: 0.6rem auto 0; }
+        .hero .btn-group { margin-top: 1.2rem; display: flex; gap: 0.7rem; justify-content: center; flex-wrap: wrap; }
+        .btn {
+            display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.8rem;
+            border-radius: 999px; font-size: 0.92rem; font-weight: 700; text-decoration: none;
+            transition: transform 0.12s, filter 0.15s;
+        }
+        .btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
+        .btn-primary { background: white; color: var(--indigo); box-shadow: 0 6px 18px rgba(0,0,0,0.15); }
+        .btn-primary:hover { background: #f1f5f9; }
+        .btn-accent { background: #10b981; color: white; box-shadow: 0 6px 18px rgba(16,185,129,0.3); }
+        .btn-accent:hover { background: #059669; }
+        .panel {
+            background: white; border-radius: 18px; padding: 1.6rem 1.8rem;
+            box-shadow: 0 12px 34px rgba(79, 70, 229, 0.1); border: 1px solid rgba(226,232,240,0.8);
+            margin-bottom: 1.4rem;
+        }
+        .panel h2 {
+            font-size: 1.15rem; color: var(--slate); margin-bottom: 0.8rem;
+            display: flex; align-items: center; gap: 0.6rem;
+        }
+        .panel h2 i { color: var(--indigo); }
+        .panel p, .panel li { font-size: 0.9rem; color: #475569; line-height: 1.7; }
+        .panel ul { padding-left: 1.4rem; margin: 0.4rem 0; }
+        .panel ul li { margin-bottom: 0.3rem; }
+        .panel .tip {
+            background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 0 8px 8px 0;
+            padding: 0.7rem 1rem; margin-top: 0.8rem; font-size: 0.85rem; color: #166534;
+        }
+        .panel .tip i { color: #10b981; }
+        .toc {
+            background: white; border-radius: 18px; padding: 1.4rem 1.8rem;
+            box-shadow: 0 12px 34px rgba(79, 70, 229, 0.1); border: 1px solid rgba(226,232,240,0.8);
+            margin-bottom: 1.4rem;
+        }
+        .toc h2 { font-size: 1.1rem; color: var(--slate); margin-bottom: 0.7rem; }
+        .toc ol { padding-left: 1.2rem; }
+        .toc ol li { margin-bottom: 0.35rem; }
+        .toc ol li a { color: var(--indigo); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+        .toc ol li a:hover { text-decoration: underline; }
+        footer { text-align: center; margin-top: 1.6rem; font-size: 0.8rem; color: var(--muted); }
+        @media print {
+            body { background: white; padding: 0; }
+            .nav, .btn-group, .no-print { display: none !important; }
+            .hero { background: var(--slate); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .panel { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="nav no-print">
+            <img src="{% static 'images/logo.svg' %}" alt="Scolaloop Logo">
+            <div style="display:flex; gap:1.2rem; flex-wrap:wrap;">
+                <a href="{% url 'routing:home' %}">Accueil</a>
+                <a href="{% url 'routing:about' %}">À propos</a>
+                <a href="{% url 'routing:manual' %}"><strong>Manuel</strong></a>
+                <a href="{% url 'routing:login' %}">Connexion</a>
+            </div>
+        </nav>
+
+        <div class="hero">
+            <h1><i class="fa-solid fa-book"></i> Manuel d'utilisation</h1>
+            <p>Guide complet de l'application ScolaLoop — transport scolaire, suivi GPS, gestion des élèves et interface parent.</p>
+            <div class="btn-group no-print">
+                <a class="btn btn-accent" href="{% url 'routing:manual_pdf' %}">
+                    <i class="fa-solid fa-file-pdf"></i> Télécharger le PDF
+                </a>
+                <a class="btn btn-primary" href="javascript:window.print()">
+                    <i class="fa-solid fa-print"></i> Imprimer
+                </a>
+            </div>
+        </div>
+
+        <!-- Sommaire -->
+        <div class="toc" id="sommaire">
+            <h2><i class="fa-solid fa-list"></i> Sommaire</h2>
+            <ol>
+                <li><a href="#s1">Présentation générale</a></li>
+                <li><a href="#s2">Connexion et sécurité</a></li>
+                <li><a href="#s3">Tableau de bord (Administration)</a></li>
+                <li><a href="#s4">Gestion des élèves</a></li>
+                <li><a href="#s5">Gestion de la flotte de bus</a></li>
+                <li><a href="#s6">Importation Excel</a></li>
+                <li><a href="#s7">Optimisation des tournées</a></li>
+                <li><a href="#s8">Suivi GPS en temps réel</a></li>
+                <li><a href="#s9">Interface chauffeur</a></li>
+                <li><a href="#s10">Interface parent / élève</a></li>
+                <li><a href="#s11">Statistiques</a></li>
+                <li><a href="#s12">Maintenance de la flotte</a></li>
+                <li><a href="#s13">Administration générale</a></li>
+            </ol>
+        </div>
+
+        <!-- 1. Présentation -->
+        <div class="panel" id="s1">
+            <h2><i class="fa-solid fa-bullseye"></i> 1. Présentation générale</h2>
+            <p><strong>ScolaLoop</strong> est un système intelligent de transport scolaire qui optimise les trajets de bus en temps réel. Il combine :</p>
+            <ul>
+                <li><strong>Optimisation des tournées</strong> — Problème VRP (Vehicle Routing Problem) résolu par Google OR-Tools</li>
+                <li><strong>Itinéraires routiers réels</strong> — Calcul via OSRM (boucle École → élèves → École)</li>
+                <li><strong>Suivi GPS en temps réel</strong> — Position des bus, alertes, replay</li>
+                <li><strong>Communication parents-école</strong> — Absences, SMS d'urgence, interface dédiée</li>
+                <li><strong>Gestion des élèves</strong> — Inscription, affectation automatique, import Excel</li>
+            </ul>
+            <p style="margin-top:0.5rem;">Le système s'adresse à trois types d'utilisateurs : <strong>l'administration de l'école</strong>, <strong>les chauffeurs</strong> et <strong>les parents / élèves</strong>.</p>
+        </div>
+
+        <!-- 2. Connexion -->
+        <div class="panel" id="s2">
+            <h2><i class="fa-solid fa-right-to-bracket"></i> 2. Connexion et sécurité</h2>
+            <p>Chaque utilisateur dispose d'un compte sécurisé :</p>
+            <ul>
+                <li><strong>École (admin)</strong> : identifiant = code de l'école, mot de passe défini à l'inscription</li>
+                <li><strong>Chauffeur</strong> : identifiant = code du bus, mot de passe = code du bus (à changer à la 1ère connexion)</li>
+                <li><strong>Parent / Élève</strong> : identifiant = matricule, mot de passe = matricule (à changer à la 1ère connexion)</li>
+            </ul>
+            <p style="margin-top:0.5rem;">À la première connexion, un changement de mot de passe est <strong>obligatoire</strong>. L'interface parent nécessite ensuite de positionner le domicile sur une carte.</p>
+            <div class="tip"><i class="fa-solid fa-lightbulb"></i> Les mots de passe par défaut (matricule ou code bus) doivent être remplacés dès la première connexion pour garantir la sécurité.</div>
+        </div>
+
+        <!-- 3. Dashboard -->
+        <div class="panel" id="s3">
+            <h2><i class="fa-solid fa-gauge-high"></i> 3. Tableau de bord (Administration)</h2>
+            <p>Le tableau de bord est l'écran principal de l'administration de l'école. Il affiche :</p>
+            <ul>
+                <li><strong>Carte interactive</strong> — Positions des bus, élèves et arrêts sur Leaflet</li>
+                <li><strong>Liste des bus</strong> — Code, chauffeur, capacité, statut</li>
+                <li><strong>Liste des élèves</strong> — Matricule, nom, bus assigné</li>
+                <li><strong>Alertes en direct</strong> — Retards, excès de vitesse, incidents</li>
+                <li><strong>Statistiques</strong> — Taux de ramassage, élèves pris/restants par bus</li>
+            </ul>
+            <p style="margin-top:0.5rem;">Le panneau latéral permet d'accéder rapidement à toutes les fonctionnalités : ajout d'élèves, import Excel, maintenance, etc.</p>
+        </div>
+
+        <!-- 4. Élèves -->
+        <div class="panel" id="s4">
+            <h2><i class="fa-solid fa-user-graduate"></i> 4. Gestion des élèves</h2>
+            <p><strong>Ajouter un élève :</strong></p>
+            <ul>
+                <li>Remplir le formulaire (matricule, nom, postnom, prénom, adresse, téléphone parent)</li>
+                <li>L'affectation au bus est <strong>automatique</strong> (signal post_save → moteur VRP)</li>
+                <li>Un compte de connexion est créé automatiquement (identifiant = matricule)</li>
+            </ul>
+            <p style="margin-top:0.5rem;"><strong>Modifier / Supprimer :</strong> cliquer sur l'icône correspondante dans la liste.</p>
+            <p><strong>Geler un élève :</strong> exclut temporairement l'élève des tournées sans le supprimer.</p>
+            <p><strong>Réinitialiser le mot de passe :</strong> l'élève devra le personnaliser à sa prochaine connexion.</p>
+            <div class="tip"><i class="fa-solid fa-lightbulb"></i> <strong>Import Excel :</strong> pour inscrire plusieurs élèves d'un coup, utilisez l'import Excel (colonnes : matricule, nom, postnom, prénom, adresse, téléphone).</div>
+        </div>
+
+        <!-- 5. Bus -->
+        <div class="panel" id="s5">
+            <h2><i class="fa-solid fa-bus"></i> 5. Gestion de la flotte de bus</h2>
+            <p><strong>Ajouter un bus :</strong></p>
+            <ul>
+                <li>Remplir le formulaire (code bus, nom du chauffeur, capacité)</li>
+                <li>Un compte chauffeur est créé automatiquement (identifiant = code bus)</li>
+            </ul>
+            <p style="margin-top:0.5rem;"><strong>Modifier / Supprimer :</strong> opérations classiques depuis la liste.</p>
+            <p><strong>Réinitialiser le mot de passe chauffeur :</strong> le chauffeur devra le personnaliser.</p>
+            <div class="tip"><i class="fa-solid fa-lightbulb"></i> <strong>Import Excel :</strong> pour ajouter plusieurs bus, utilisez l'import Excel (colonnes : code_bus, nom_chauffeur, capacite).</div>
+        </div>
+
+        <!-- 6. Import Excel -->
+        <div class="panel" id="s6">
+            <h2><i class="fa-solid fa-file-excel"></i> 6. Importation Excel</h2>
+            <p>ScolaLoop supporte l'import en masse via des fichiers Excel (.xlsx) :</p>
+            <ul>
+                <li><strong>Élèves</strong> : matricule, nom, postnom, prénom, adresse, téléphone</li>
+                <li><strong>Bus</strong> : code_bus, nom_chauffeur, capacite</li>
+                <li><strong>Élèves (gel)</strong> : même format, mais importe uniquement les statuts de gel</li>
+            </ul>
+            <p style="margin-top:0.5rem;">L'import vérifie automatiquement les doublons et valide les données avant insertion.</p>
+        </div>
+
+        <!-- 7. Optimisation -->
+        <div class="panel" id="s7">
+            <h2><i class="fa-solid fa-gears"></i> 7. Optimisation des tournées</h2>
+            <p>Le moteur d'optimisation fonctionne automatiquement :</p>
+            <ul>
+                <li>À chaque ajout/modification d'élève, le signal <code>post_save</code> relance le calcul</li>
+                <li>L'algorithme VRP répartit les élèves sur les bus</li>
+                <li>L'ordre des arrêts est calculé par OR-Tools (TSP interne par bus)</li>
+                <li>Les itinéraires routiers réels sont obtenus via OSRM</li>
+                <li>Le résultat est une boucle : <strong>École → arrêts → École</strong></li>
+            </ul>
+            <div class="tip"><i class="fa-solid fa-lightbulb"></i> Si vous modifiez la position d'un élève, les tournées sont recalculées automatiquement.</div>
+        </div>
+
+        <!-- 8. GPS -->
+        <div class="panel" id="s8">
+            <h2><i class="fa-solid fa-satellite-dish"></i> 8. Suivi GPS en temps réel</h2>
+            <p>Le suivi GPS permet de :</p>
+            <ul>
+                <li><strong>Localiser les bus</strong> en temps réel sur la carte</li>
+                <li><strong>Recevoir des alertes</strong> d'excès de vitesse (au-delà de la limite configurée)</li>
+                <li><strong>Estimer les retards</strong> par rapport à l'horaire prévu</li>
+                <li><strong>Rejouer les trajets</strong> passés via le replay GPS</li>
+            </ul>
+            <p style="margin-top:0.5rem;">La position GPS est envoyée par le chauffeur via l'application mobile ou le formulaire web dédié.</p>
+        </div>
+
+        <!-- 9. Chauffeur -->
+        <div class="panel" id="s9">
+            <h2><i class="fa-solid fa-id-card"></i> 9. Interface chauffeur</h2>
+            <p>Le chauffeur dispose d'une interface simplifiée :</p>
+            <ul>
+                <li><strong>Carte du trajet</strong> — L'itinéraire à suivre avec les arrêts</li>
+                <li><strong>Marquage des élèves</strong> — Confirmer la prise en charge de chaque élève</li>
+                <li><strong>Envoi de position</strong> — Mettre à jour la position GPS</li>
+                <li><strong>Signalement d'incident</strong> — Déclarer un problème (panne, accident, etc.)</li>
+                <li><strong>Synchronisation hors-ligne</strong> — Les données accumulées sans connexion sont envoyées automatiquement</li>
+            </ul>
+        </div>
+
+        <!-- 10. Parent -->
+        <div class="panel" id="s10">
+            <h2><i class="fa-solid fa-house-user"></i> 10. Interface parent / élève</h2>
+            <p>L'interface parent permet de :</p>
+            <ul>
+                <li><strong>Suivre le bus</strong> en temps réel sur la carte</li>
+                <li><strong>Voir l'état du ramassage</strong> — Statut du trajet, estimation du temps d'arrivée</li>
+                <li><strong>Signaler une absence</strong> — Le bus ne s'arrêtera pas chez vous</li>
+                <li><strong>Afficher son domicile</strong> sur la carte</li>
+            </ul>
+            <p style="margin-top:0.5rem;">Au premier accès, le parent doit positionner le domicile de l'élève sur la carte (clic ou position GPS).</p>
+            <div class="tip"><i class="fa-solid fa-lightbulb"></i> <strong>Notification :</strong> une alerte est envoyée lorsque le bus est proche du domicile (100 m).</div>
+        </div>
+
+        <!-- 11. Statistiques -->
+        <div class="panel" id="s11">
+            <h2><i class="fa-solid fa-chart-pie"></i> 11. Statistiques</h2>
+            <p>La page statistiques fournit un tableau d'ensemble :</p>
+            <ul>
+                <li>Nombre d'élèves assignés / pris / restants par bus</li>
+                <li>Taux de ramassage par bus</li>
+                <li>Distance totale et durée estimée des tournées</li>
+                <li>Évolution dans le temps</li>
+            </ul>
+        </div>
+
+        <!-- 12. Maintenance -->
+        <div class="panel" id="s12">
+            <h2><i class="fa-solid fa-wrench"></i> 12. Maintenance de la flotte</h2>
+            <p>L'administration peut enregistrer les interventions d'entretien :</p>
+            <ul>
+                <li><strong>Type d'intervention</strong> : révision, changement de pneus, vidange, etc.</li>
+                <li><strong>Coût</strong> et <strong>date</strong> de l'intervention</li>
+                <li><strong>Prochaine échéance</strong> (kilométrage ou date)</li>
+            </ul>
+            <p style="margin-top:0.5rem;">Un historique complet par bus est disponible depuis le tableau de bord.</p>
+        </div>
+
+        <!-- 13. Admin générale -->
+        <div class="panel" id="s13">
+            <h2><i class="fa-solid fa-crown"></i> 13. Administration générale</h2>
+            <p>L'administration générale (superutilisateur) gère l'ensemble des écoles :</p>
+            <ul>
+                <li><strong>Liste des écoles</strong> — Activer / Désactiver</li>
+                <li><strong>Statistiques globales</strong> — Nombre total d'élèves, bus, routes</li>
+                <li><strong>Création d'écoles</strong> — Inscription directe</li>
+                <li><strong>Suppression</strong> — Suppression définitive avec toutes les données</li>
+                <li><strong>Réinitialisation des mots de passe</strong> des comptes école</li>
+            </ul>
+        </div>
+
+        <div style="text-align:center; margin-top:1.5rem;" class="no-print">
+            <a class="btn btn-accent" href="{% url 'routing:manual_pdf' %}">
+                <i class="fa-solid fa-file-pdf"></i> Télécharger le manuel en PDF
+            </a>
+            <a class="btn btn-primary" href="{% url 'routing:home' %}" style="margin-left:0.6rem;">
+                ← Retour à l'accueil
+            </a>
+        </div>
+
+        <footer>© 2026 Scolaloop — Manuel d'utilisation · Développé par <strong>ESTECH</strong></footer>
+    </div>
+
+    <!-- Structured Data JSON-LD pour Google -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": "Manuel d'utilisation — Scolaloop",
+        "url": "{{ page_url }}",
+        "description": "{{ page_description }}",
+        "publisher": {
+            "@type": "Organization",
+            "name": "ESTECH"
+        }
+    }
+    </script>
+</body>
+</html>

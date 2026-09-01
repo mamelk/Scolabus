@@ -214,6 +214,11 @@ def sitemap_xml_view(request):
             'priority': '0.6',
             'changefreq': 'monthly',
         },
+        {
+            'loc': f"{base}{reverse('routing:manual')}",
+            'priority': '0.7',
+            'changefreq': 'monthly',
+        },
     ]
 
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -282,6 +287,243 @@ def about_view(request):
         url_path='/apropos/',
     )
     return render(request, "routing/about.html", ctx)
+
+
+def manual_view(request):
+    """Manuel d'utilisation public (sans connexion) de l'application ScolaLoop."""
+    ctx = _seo_context(
+        request,
+        title='Manuel d\'utilisation — Scolaloop · ESTECH',
+        description='Guide complet d\'utilisation de ScolaLoop : transport scolaire, suivi GPS, gestion des élèves, tournées et interface parent.',
+        url_path='/manuel/',
+    )
+    return render(request, "routing/manual.html", ctx)
+
+
+def manual_pdf_view(request):
+    """Génère et télécharge le manuel d'utilisation au format PDF."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import cm, mm
+    from reportlab.lib.colors import HexColor
+    from reportlab.platypus import (
+        SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
+        PageBreak, ListFlowable, ListItem,
+    )
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4,
+        topMargin=2 * cm, bottomMargin=2 * cm,
+        leftMargin=2 * cm, rightMargin=2 * cm,
+        title="Manuel d'utilisation ScolaLoop",
+        author="ESTECH",
+    )
+
+    styles = getSampleStyleSheet()
+    indigo = HexColor="#4F46E5"
+    blue = HexColor("#2563EB")
+    slate = HexColor("#0f172a")
+    muted = HexColor("#475569")
+
+    title_style = ParagraphStyle('CustomTitle', parent=styles['Title'], fontSize=26,
+                                  textColor=indigo, spaceAfter=12, alignment=TA_CENTER)
+    subtitle_style = ParagraphStyle('Subtitle', parent=styles['Normal'], fontSize=11,
+                                     textColor=muted, alignment=TA_CENTER, spaceAfter=30)
+    h1 = ParagraphStyle('H1', parent=styles['Heading1'], fontSize=18, textColor=slate,
+                         spaceBefore=20, spaceAfter=10, borderPadding=(0, 0, 4, 0))
+    h2 = ParagraphStyle('H2', parent=styles['Heading2'], fontSize=14, textColor=indigo,
+                         spaceBefore=14, spaceAfter=8)
+    body = ParagraphStyle('Body', parent=styles['Normal'], fontSize=10, leading=15,
+                           textColor=muted, alignment=TA_JUSTIFY, spaceAfter=6)
+    bullet = ParagraphStyle('Bullet', parent=body, leftIndent=18, bulletIndent=6,
+                             spaceBefore=2, spaceAfter=2)
+    tip = ParagraphStyle('Tip', parent=body, leftIndent=12, backColor=HexColor("#f0fdf4"),
+                          borderPadding=(6, 8, 6, 8), spaceBefore=6, spaceAfter=8)
+
+    story = []
+
+    # --- Page de garde ---
+    story.append(Spacer(1, 3 * cm))
+    story.append(Paragraph(" Manuel d'utilisation", title_style))
+    story.append(Paragraph("Scolaloop — Système de Transport Scolaire Intelligent", subtitle_style))
+    story.append(Spacer(1, 1 * cm))
+    story.append(Paragraph("Version 1.0 · 2026", subtitle_style))
+    story.append(Paragraph("Développé par ESTECH", subtitle_style))
+    story.append(PageBreak())
+
+    # --- Sommaire ---
+    story.append(Paragraph("Sommaire", h1))
+    toc = [
+        "1. Présentation générale",
+        "2. Connexion et sécurité",
+        "3. Tableau de bord (Administration)",
+        "4. Gestion des élèves",
+        "5. Gestion de la flotte de bus",
+        "6. Importation Excel",
+        "7. Optimisation des tournées",
+        "8. Suivi GPS en temps réel",
+        "9. Interface chauffeur",
+        "10. Interface parent / élève",
+        "11. Statistiques",
+        "12. Maintenance de la flotte",
+        "13. Administration générale",
+    ]
+    for item in toc:
+        story.append(Paragraph(item, body))
+    story.append(PageBreak())
+
+    # --- Contenu ---
+    sections = [
+        ("1. Présentation générale", [
+            ("<b>ScolaLoop</b> est un système intelligent de transport scolaire qui optimise les trajets de bus scolaires en temps réel. Il combine :", []),
+            ("", [
+                "• <b>Optimisation des tournées</b> — Problème VRP résolu par Google OR-Tools",
+                "• <b>Itinéraires routiers réels</b> — Calcul via OSRM (boucle École → élèves → École)",
+                "• <b>Suivi GPS en temps réel</b> — Position des bus, alertes, replay",
+                "• <b>Communication parents-école</b> — Absences, SMS d'urgence, interface dédiée",
+                "• <b>Gestion des élèves</b> — Inscription, affectation automatique, import Excel",
+            ]),
+            ("Le système s'adresse à trois types d'utilisateurs : <b>l'administration de l'école</b>, <b>les chauffeurs</b> et <b>les parents / élèves</b>.", []),
+        ]),
+        ("2. Connexion et sécurité", [
+            ("Chaque utilisateur dispose d'un compte sécurisé :", []),
+            ("", [
+                "• <b>École (admin)</b> : identifiant = code de l'école, mot de passe défini à l'inscription",
+                "• <b>Chauffeur</b> : identifiant = code du bus, mot de passe = code du bus (à changer à la 1ère connexion)",
+                "• <b>Parent / Élève</b> : identifiant = matricule, mot de passe = matricule (à changer à la 1ère connexion)",
+            ]),
+            ("À la première connexion, un changement de mot de passe est <b>obligatoire</b>. L'interface parent nécessite ensuite de positionner le domicile sur une carte.", []),
+            ("💡 <b>Conseil</b> : les mots de passe par défaut (matricule ou code bus) doivent être remplacés dès la première connexion pour garantir la sécurité.", []),
+        ]),
+        ("3. Tableau de bord (Administration)", [
+            ("Le tableau de bord est l'écran principal de l'administration de l'école. Il affiche :", []),
+            ("", [
+                "• <b>Carte interactive</b> — Positions des bus, élèves et arrêts sur Leaflet",
+                "• <b>Liste des bus</b> — Code, chauffeur, capacité, statut",
+                "• <b>Liste des élèves</b> — Matricule, nom, bus assigné",
+                "• <b>Alertes en direct</b> — Retards, excès de vitesse, incidents",
+                "• <b>Statistiques</b> — Taux de ramassage, élèves pris/restants par bus",
+            ]),
+            ("Le panneau latéral permet d'accéder rapidement à toutes les fonctionnalités : ajout d'élèves, import Excel, maintenance, etc.", []),
+        ]),
+        ("4. Gestion des élèves", [
+            ("<b>Ajouter un élève</b> :", []),
+            ("", [
+                "• Remplir le formulaire (matricule, nom, postnom, prénom, adresse, téléphone parent)",
+                "• L'affectation au bus est <b>automatique</b> (signal post_save → moteur VRP)",
+                "• Un compte de connexion est créé automatiquement (identifiant = matricule)",
+            ]),
+            ("<b>Modifier / Supprimer</b> : cliquer sur l'icône correspondante dans la liste.", []),
+            ("<b>Geler un élève</b> : exclut temporairement l'élève des tournées sans le supprimer.", []),
+            ("<b>Réinitialiser le mot de passe</b> : l'élève devra le personnaliser à sa prochaine connexion.", []),
+            ("💡 <b>Import Excel</b> : pour inscrire plusieurs élèves d'un coup, utilisez l'import Excel (colonnes : matricule, nom, postnom, prénom, adresse, téléphone).", []),
+        ]),
+        ("5. Gestion de la flotte de bus", [
+            ("<b>Ajouter un bus</b> :", []),
+            ("", [
+                "• Remplir le formulaire (code bus, nom du chauffeur, capacité)",
+                "• Un compte chauffeur est créé automatiquement (identifiant = code bus)",
+            ]),
+            ("<b>Modifier / Supprimer</b> : opérations classiques depuis la liste.", []),
+            ("<b>Réinitialiser le mot de passe chauffeur</b> : le chauffeur devra le personnaliser.", []),
+            ("💡 <b>Import Excel</b> : pour ajouter plusieurs bus, utilisez l'import Excel (colonnes : code_bus, nom_chauffeur, capacite).", []),
+        ]),
+        ("6. Importation Excel", [
+            ("ScolaLoop supporte l'import en masse via des fichiers Excel (.xlsx) :", []),
+            ("", [
+                "• <b>Élèves</b> : matricule, nom, postnom, prénom, adresse, téléphone",
+                "• <b>Bus</b> : code_bus, nom_chauffeur, capacite",
+                "• <b>Élèves (gel)</b> : même format, mais importe uniquement les statuts de gel",
+            ]),
+            ("L'import vérifie automatiquement les doublons et valide les données avant insertion.", []),
+        ]),
+        ("7. Optimisation des tournées", [
+            ("Le moteur d'optimisation fonctionne automatiquement :", []),
+            ("", [
+                "• À chaque ajout/modification d'élève, le signal post_save relance le calcul",
+                "• L'algorithme VRP (Vehicle Routing Problem) répartit les élèves sur les bus",
+                "• L'ordre des arrêts est calculé par OR-Tools (TSP interne par bus)",
+                "• Les itinéraires routiers réels sont obtenus via OSRM",
+                "• Le résultat est une boucle : École → arrêts → École",
+            ]),
+            ("💡 <b>Recalcul</b> : si vous modifiez la position d'un élève, les tournées sont recalculées automatiquement.", []),
+        ]),
+        ("8. Suivi GPS en temps réel", [
+            ("Le suivi GPS permet de :", []),
+            ("", [
+                "• <b>Localiser les bus</b> en temps réel sur la carte",
+                "• <b>Recevoir des alertes</b> d'excès de vitesse (au-delà de la limite configurée)",
+                "• <b>Estimer les retards</b> par rapport à l'horaire prévu",
+                "• <b>Rejouer les trajets</b> passés via le replay GPS",
+            ]),
+            ("La position GPS est envoyée par le chauffeur via l'application mobile ou le formulaire web dédié.", []),
+        ]),
+        ("9. Interface chauffeur", [
+            ("Le chauffeur dispose d'une interface simplifiée :", []),
+            ("", [
+                "• <b>Carte du trajet</b> — L'itinéraire à suivre avec les arrêts",
+                "• <b>Marquage des élèves</b> — Confirmer la prise en charge de chaque élève",
+                "• <b>Envoi de position</b> — Mettre à jour la position GPS",
+                "• <b>Signalement d'incident</b> — Déclarer un problème (panne, accident, etc.)",
+                "• <b>Synchronisation hors-ligne</b> — Les données accumulées sans connexion sont envoyées automatiquement",
+            ]),
+        ]),
+        ("10. Interface parent / élève", [
+            ("L'interface parent permet de :", []),
+            ("", [
+                "• <b>Suivre le bus</b> en temps réel sur la carte",
+                "• <b>Voir l'état du ramassage</b> : statut du trajet, estimation du temps d'arrivée",
+                "• <b>Signaler une absence</b> — Le bus ne s'arrêtera pas chez vous",
+                "• <b>Afficher son domicile</b> sur la carte",
+            ]),
+            ("Au premier accès, le parent doit positionner le domicile de l'élève sur la carte (clic ou position GPS).", []),
+            ("💡 <b>Notification</b> : une alerte est envoyée lorsque le bus est proche du domicile (100 m).", []),
+        ]),
+        ("11. Statistiques", [
+            ("La page statistiques fournit un tableau d'ensemble :", []),
+            ("", [
+                "• Nombre d'élèves assignés / pris / restants par bus",
+                "• Taux de ramassage par bus",
+                "• Distance totale et durée estimée des tournées",
+                "• Évolution dans le temps",
+            ]),
+        ]),
+        ("12. Maintenance de la flotte", [
+            ("L'administration peut enregistrer les interventions d'entretien :", []),
+            ("", [
+                "• <b>Type d'intervention</b> : révision, changement de pneus, vidange, etc.",
+                "• <b>Coût</b> et <b>date</b> de l'intervention",
+                "• <b>Prochaine échéance</b> (kilométrage ou date)",
+            ]),
+            ("Un historique complet par bus est disponible depuis le tableau de bord.", []),
+        ]),
+        ("13. Administration générale", [
+            ("L'administration générale (superutilisateur) gère l'ensemble des écoles :", []),
+            ("", [
+                "• <b>Liste des écoles</b> — Activer / Désactiver",
+                "• <b>Statistiques globales</b> — Nombre total d'élèves, bus, routes",
+                "• <b>Création d'écoles</b> — Inscription directe",
+                "• <b>Suppression</b> — Suppression définitive avec toutes les données",
+                "• <b>Réinitialisation des mots de passe</b> des comptes école",
+            ]),
+        ]),
+    ]
+
+    for section_title, paragraphs in sections:
+        story.append(Paragraph(section_title, h1))
+        for text, bullets in paragraphs:
+            if text:
+                story.append(Paragraph(text, body))
+            for b in bullets:
+                story.append(Paragraph(b, bullet))
+
+    doc.build(story)
+    buf.seek(0)
+    response = HttpResponse(buf.getvalue(), content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename="manuel_scolaloop.pdf"'
+    return response
 
 
 def login_view(request):

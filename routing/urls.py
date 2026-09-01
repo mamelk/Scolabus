@@ -12,6 +12,8 @@ urlpatterns = [
     # PWA : Service Worker servi à la racine (portée "/")
     path("sw.js", views.pwa_service_worker, name="service_worker"),
     path("apropos/", views.about_view, name="about"),
+    path("manuel/", views.manual_view, name="manual"),
+    path("manuel/pdf/", views.manual_pdf_view, name="manual_pdf"),
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
     path("register-school/", views.register_school_view, name="register_school"),
