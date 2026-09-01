@@ -347,9 +347,9 @@ def manual_pdf_view(request):
     # --- Page de garde ---
     story.append(Spacer(1, 3 * cm))
     story.append(Paragraph(" Manuel d'utilisation", title_style))
-    story.append(Paragraph("Scolaloop — Système de Transport Scolaire Intelligent", subtitle_style))
+    story.append(Paragraph("Scolaloop - Système de Transport Scolaire Intelligent", subtitle_style))
     story.append(Spacer(1, 1 * cm))
-    story.append(Paragraph("Version 1.0 · 2026", subtitle_style))
+    story.append(Paragraph("Version 1.0 - 2026", subtitle_style))
     story.append(Paragraph("Développé par ESTECH", subtitle_style))
     story.append(PageBreak())
 
@@ -379,11 +379,11 @@ def manual_pdf_view(request):
         ("1. Présentation générale", [
             ("<b>ScolaLoop</b> est un système intelligent de transport scolaire qui optimise les trajets de bus scolaires en temps réel. Il combine :", []),
             ("", [
-                "• <b>Optimisation des tournées</b> — Problème VRP résolu par Google OR-Tools",
-                "• <b>Itinéraires routiers réels</b> — Calcul via OSRM (boucle École → élèves → École)",
-                "• <b>Suivi GPS en temps réel</b> — Position des bus, alertes, replay",
-                "• <b>Communication parents-école</b> — Absences, SMS d'urgence, interface dédiée",
-                "• <b>Gestion des élèves</b> — Inscription, affectation automatique, import Excel",
+                "• <b>Optimisation des tournées</b> - Problème VRP résolu par Google OR-Tools",
+                "• <b>Itinéraires routiers réels</b> - Calcul via OSRM (boucle École - élèves - École)",
+                "• <b>Suivi GPS en temps réel</b> - Position des bus, alertes, replay",
+                "• <b>Communication parents-école</b> - Absences, SMS d'urgence, interface dédiée",
+                "• <b>Gestion des élèves</b> - Inscription, affectation automatique, import Excel",
             ]),
             ("Le système s'adresse à trois types d'utilisateurs : <b>l'administration de l'école</b>, <b>les chauffeurs</b> et <b>les parents / élèves</b>.", []),
         ]),
@@ -395,16 +395,16 @@ def manual_pdf_view(request):
                 "• <b>Parent / Élève</b> : identifiant = matricule, mot de passe = matricule (à changer à la 1ère connexion)",
             ]),
             ("À la première connexion, un changement de mot de passe est <b>obligatoire</b>. L'interface parent nécessite ensuite de positionner le domicile sur une carte.", []),
-            ("💡 <b>Conseil</b> : les mots de passe par défaut (matricule ou code bus) doivent être remplacés dès la première connexion pour garantir la sécurité.", []),
+            ("Conseil : les mots de passe par défaut (matricule ou code bus) doivent être remplacés dès la première connexion pour garantir la sécurité.", []),
         ]),
         ("3. Tableau de bord (Administration)", [
             ("Le tableau de bord est l'écran principal de l'administration de l'école. Il affiche :", []),
             ("", [
-                "• <b>Carte interactive</b> — Positions des bus, élèves et arrêts sur Leaflet",
-                "• <b>Liste des bus</b> — Code, chauffeur, capacité, statut",
-                "• <b>Liste des élèves</b> — Matricule, nom, bus assigné",
-                "• <b>Alertes en direct</b> — Retards, excès de vitesse, incidents",
-                "• <b>Statistiques</b> — Taux de ramassage, élèves pris/restants par bus",
+                "• <b>Carte interactive</b> - Positions des bus, élèves et arrêts sur Leaflet",
+                "• <b>Liste des bus</b> - Code, chauffeur, capacité, statut",
+                "• <b>Liste des élèves</b> - Matricule, nom, bus assigné",
+                "• <b>Alertes en direct</b> - Retards, excès de vitesse, incidents",
+                "• <b>Statistiques</b> - Taux de ramassage, élèves pris/restants par bus",
             ]),
             ("Le panneau latéral permet d'accéder rapidement à toutes les fonctionnalités : ajout d'élèves, import Excel, maintenance, etc.", []),
         ]),
@@ -412,13 +412,13 @@ def manual_pdf_view(request):
             ("<b>Ajouter un élève</b> :", []),
             ("", [
                 "• Remplir le formulaire (matricule, nom, postnom, prénom, adresse, téléphone parent)",
-                "• L'affectation au bus est <b>automatique</b> (signal post_save → moteur VRP)",
+                "• L'affectation au bus est <b>automatique</b> (signal post_save, moteur VRP)",
                 "• Un compte de connexion est créé automatiquement (identifiant = matricule)",
             ]),
             ("<b>Modifier / Supprimer</b> : cliquer sur l'icône correspondante dans la liste.", []),
             ("<b>Geler un élève</b> : exclut temporairement l'élève des tournées sans le supprimer.", []),
             ("<b>Réinitialiser le mot de passe</b> : l'élève devra le personnaliser à sa prochaine connexion.", []),
-            ("💡 <b>Import Excel</b> : pour inscrire plusieurs élèves d'un coup, utilisez l'import Excel (colonnes : matricule, nom, postnom, prénom, adresse, téléphone).", []),
+            ("Import Excel : pour inscrire plusieurs élèves d'un coup, utilisez l'import Excel (colonnes : matricule, nom, postnom, prénom, adresse, téléphone).", []),
         ]),
         ("5. Gestion de la flotte de bus", [
             ("<b>Ajouter un bus</b> :", []),
@@ -428,7 +428,7 @@ def manual_pdf_view(request):
             ]),
             ("<b>Modifier / Supprimer</b> : opérations classiques depuis la liste.", []),
             ("<b>Réinitialiser le mot de passe chauffeur</b> : le chauffeur devra le personnaliser.", []),
-            ("💡 <b>Import Excel</b> : pour ajouter plusieurs bus, utilisez l'import Excel (colonnes : code_bus, nom_chauffeur, capacite).", []),
+            ("Import Excel : pour ajouter plusieurs bus, utilisez l'import Excel (colonnes : code_bus, nom_chauffeur, capacite).", []),
         ]),
         ("6. Importation Excel", [
             ("ScolaLoop supporte l'import en masse via des fichiers Excel (.xlsx) :", []),
@@ -446,9 +446,9 @@ def manual_pdf_view(request):
                 "• L'algorithme VRP (Vehicle Routing Problem) répartit les élèves sur les bus",
                 "• L'ordre des arrêts est calculé par OR-Tools (TSP interne par bus)",
                 "• Les itinéraires routiers réels sont obtenus via OSRM",
-                "• Le résultat est une boucle : École → arrêts → École",
+                "• Le résultat est une boucle : École - arrêts - École",
             ]),
-            ("💡 <b>Recalcul</b> : si vous modifiez la position d'un élève, les tournées sont recalculées automatiquement.", []),
+            ("Recalcul : si vous modifiez la position d'un élève, les tournées sont recalculées automatiquement.", []),
         ]),
         ("8. Suivi GPS en temps réel", [
             ("Le suivi GPS permet de :", []),
@@ -463,11 +463,11 @@ def manual_pdf_view(request):
         ("9. Interface chauffeur", [
             ("Le chauffeur dispose d'une interface simplifiée :", []),
             ("", [
-                "• <b>Carte du trajet</b> — L'itinéraire à suivre avec les arrêts",
-                "• <b>Marquage des élèves</b> — Confirmer la prise en charge de chaque élève",
-                "• <b>Envoi de position</b> — Mettre à jour la position GPS",
-                "• <b>Signalement d'incident</b> — Déclarer un problème (panne, accident, etc.)",
-                "• <b>Synchronisation hors-ligne</b> — Les données accumulées sans connexion sont envoyées automatiquement",
+                "• <b>Carte du trajet</b> - L'itinéraire à suivre avec les arrêts",
+                "• <b>Marquage des élèves</b> - Confirmer la prise en charge de chaque élève",
+                "• <b>Envoi de position</b> - Mettre à jour la position GPS",
+                "• <b>Signalement d'incident</b> - Déclarer un problème (panne, accident, etc.)",
+                "• <b>Synchronisation hors-ligne</b> - Les données accumulées sans connexion sont envoyées automatiquement",
             ]),
         ]),
         ("10. Interface parent / élève", [
@@ -475,11 +475,11 @@ def manual_pdf_view(request):
             ("", [
                 "• <b>Suivre le bus</b> en temps réel sur la carte",
                 "• <b>Voir l'état du ramassage</b> : statut du trajet, estimation du temps d'arrivée",
-                "• <b>Signaler une absence</b> — Le bus ne s'arrêtera pas chez vous",
+                "• <b>Signaler une absence</b> - Le bus ne s'arrêtera pas chez vous",
                 "• <b>Afficher son domicile</b> sur la carte",
             ]),
             ("Au premier accès, le parent doit positionner le domicile de l'élève sur la carte (clic ou position GPS).", []),
-            ("💡 <b>Notification</b> : une alerte est envoyée lorsque le bus est proche du domicile (100 m).", []),
+            ("Notification : une alerte est envoyée lorsque le bus est proche du domicile (100 m).", []),
         ]),
         ("11. Statistiques", [
             ("La page statistiques fournit un tableau d'ensemble :", []),
@@ -502,10 +502,10 @@ def manual_pdf_view(request):
         ("13. Administration générale", [
             ("L'administration générale (superutilisateur) gère l'ensemble des écoles :", []),
             ("", [
-                "• <b>Liste des écoles</b> — Activer / Désactiver",
-                "• <b>Statistiques globales</b> — Nombre total d'élèves, bus, routes",
-                "• <b>Création d'écoles</b> — Inscription directe",
-                "• <b>Suppression</b> — Suppression définitive avec toutes les données",
+                "• <b>Liste des écoles</b> - Activer / Désactiver",
+                "• <b>Statistiques globales</b> - Nombre total d'élèves, bus, routes",
+                "• <b>Création d'écoles</b> - Inscription directe",
+                "• <b>Suppression</b> - Suppression définitive avec toutes les données",
                 "• <b>Réinitialisation des mots de passe</b> des comptes école",
             ]),
         ]),
