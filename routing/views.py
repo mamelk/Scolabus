@@ -306,9 +306,7 @@ def manual_pdf_view(request):
     from reportlab.lib.styles import ParagraphStyle
     from reportlab.lib.units import cm
     from reportlab.lib.colors import HexColor
-    from reportlab.platypus import (
-        SimpleDocTemplate, Paragraph, Spacer, PageBreak,
-    )
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
     from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
 
     buf = io.BytesIO()
@@ -323,201 +321,392 @@ def manual_pdf_view(request):
     indigo = HexColor("#4F46E5")
     slate = HexColor("#0f172a")
     muted = HexColor("#475569")
+    green = HexColor("#166534")
+    red = HexColor("#991b1b")
 
-    title_style = ParagraphStyle('CustomTitle', fontName='Helvetica-Bold', fontSize=26,
-                                  textColor=indigo, spaceAfter=12, alignment=TA_CENTER)
-    subtitle_style = ParagraphStyle('Sub', fontName='Helvetica', fontSize=11,
-                                     textColor=muted, alignment=TA_CENTER, spaceAfter=30)
-    h1_style = ParagraphStyle('H1', fontName='Helvetica-Bold', fontSize=18, textColor=slate,
-                               spaceBefore=20, spaceAfter=10)
-    body_style = ParagraphStyle('Body', fontName='Helvetica', fontSize=10, leading=15,
-                                 textColor=muted, alignment=TA_JUSTIFY, spaceAfter=6)
-    bullet_style = ParagraphStyle('Bullet', parent=body_style, leftIndent=18, bulletIndent=6,
-                                   spaceBefore=2, spaceAfter=2)
+    title_style = ParagraphStyle('T', fontName='Helvetica-Bold', fontSize=28,
+                                  textColor=indigo, spaceAfter=8, alignment=TA_CENTER)
+    subtitle_style = ParagraphStyle('S', fontName='Helvetica', fontSize=11,
+                                     textColor=muted, alignment=TA_CENTER, spaceAfter=24)
+    h1 = ParagraphStyle('H1', fontName='Helvetica-Bold', fontSize=20, textColor=slate,
+                         spaceBefore=24, spaceAfter=10)
+    h2 = ParagraphStyle('H2', fontName='Helvetica-Bold', fontSize=14, textColor=indigo,
+                         spaceBefore=14, spaceAfter=6)
+    h3 = ParagraphStyle('H3', fontName='Helvetica-Bold', fontSize=11, textColor=slate,
+                         spaceBefore=10, spaceAfter=4)
+    body = ParagraphStyle('B', fontName='Helvetica', fontSize=9.5, leading=14,
+                           textColor=muted, alignment=TA_JUSTIFY, spaceAfter=5)
+    step = ParagraphStyle('Step', parent=body, leftIndent=14, bulletIndent=0,
+                           spaceBefore=2, spaceAfter=2)
+    substep = ParagraphStyle('Sub', parent=body, leftIndent=28, bulletIndent=14,
+                              spaceBefore=1, spaceAfter=1, fontSize=9)
+    note_style = ParagraphStyle('Note', fontName='Helvetica-Oblique', fontSize=9, leading=13,
+                                 textColor=green, leftIndent=10, spaceBefore=4, spaceAfter=6)
+    warn_style = ParagraphStyle('Warn', fontName='Helvetica-Bold', fontSize=9, leading=13,
+                                 textColor=red, leftIndent=10, spaceBefore=4, spaceAfter=6)
+
+    def B(t): return "<b>" + t + "</b>"
+    def I(t): return "<i>" + t + "</i>"
 
     story = []
 
-    # Page de garde
-    story.append(Spacer(1, 3 * cm))
+    # ===== PAGE DE GARDE =====
+    story.append(Spacer(1, 4 * cm))
     story.append(Paragraph("Manuel d'utilisation", title_style))
     story.append(Paragraph("Scolaloop - Transport Scolaire Intelligent", subtitle_style))
-    story.append(Spacer(1, 1 * cm))
-    story.append(Paragraph("Version 1.0", subtitle_style))
+    story.append(Spacer(1, 1.5 * cm))
+    story.append(Paragraph("Version 1.0 - 2026", subtitle_style))
     story.append(Paragraph("Developpe par ESTECH", subtitle_style))
     story.append(PageBreak())
 
-    # Sommaire
-    story.append(Paragraph("Sommaire", h1_style))
-    toc_items = [
-        "1. Presentation generale", "2. Connexion et securite",
-        "3. Tableau de bord (Administration)", "4. Gestion des eleves",
-        "5. Gestion de la flotte de bus", "6. Importation Excel",
-        "7. Optimisation des tournees", "8. Suivi GPS en temps reel",
-        "9. Interface chauffeur", "10. Interface parent / eleve",
-        "11. Statistiques", "12. Maintenance de la flotte",
-        "13. Administration generale",
+    # ===== SOMMAIRE =====
+    story.append(Paragraph("Sommaire", h1))
+    toc = [
+        "1. Presentation generale",
+        "2. Connexion et securite",
+        "3. Interface Administration (Tableau de bord)",
+        "    3.1 Ajouter un eleve",
+        "    3.2 Ajouter un bus",
+        "    3.3 Importer des eleves ou bus via Excel",
+        "    3.4 Consulter la carte et les routes",
+        "    3.5 Gerer les absences et le gel",
+        "    3.6 Envoyer un SMS d'urgence",
+        "    3.7 Enregistrer une maintenance",
+        "4. Interface Chauffeur",
+        "    4.1 Demarrer la journee",
+        "    4.2 Suivre le trajet sur la carte",
+        "    4.3 Prendre un eleve (embarquement)",
+        "    4.4 Signaler un incident",
+        "    4.5 Mode hors-ligne",
+        "5. Interface Parent / Eleve",
+        "    5.1 Premiere connexion et configuration",
+        "    5.2 Suivre le bus en temps reel",
+        "    5.3 Signaler une absence",
+        "6. Administration generale (superutilisateur)",
+        "7. FAQ et depannage",
     ]
-    for item in toc_items:
-        story.append(Paragraph(item, body_style))
+    for item in toc:
+        story.append(Paragraph(item, body))
     story.append(PageBreak())
 
-    # Contenu
-    def B(t):
-        return "<b>" + t + "</b>"
+    # ===== 1. PRESENTATION =====
+    story.append(Paragraph("1. Presentation generale", h1))
+    story.append(Paragraph(
+        B("ScolaLoop") + " est un systeme intelligent de transport scolaire qui optimise les trajets "
+        "de bus en temps reel. Il combine :", body))
+    story.append(Paragraph("- " + B("Optimisation des tournees") + " : Probleme VRP resolu par Google OR-Tools", step))
+    story.append(Paragraph("- " + B("Itineraires routiers reels") + " : Calcul via OSRM (boucle Ecole - eleves - Ecole)", step))
+    story.append(Paragraph("- " + B("Suivi GPS en temps reel") + " : Position des bus, alertes, replay", step))
+    story.append(Paragraph("- " + B("Communication parents-ecole") + " : Absences, SMS d'urgence", step))
+    story.append(Paragraph("- " + B("Gestion des eleves") + " : Inscription, affectation automatique, import Excel", step))
+    story.append(Paragraph(
+        "Le systeme s'adresse a trois types d'utilisateurs : " +
+        B("l'administration de l'ecole") + ", " + B("les chauffeurs") +
+        " et " + B("les parents / eleves") + ".", body))
+    story.append(Paragraph(
+        "L'affectation des eleves aux bus est " + B("entierement automatique") +
+        " : des qu'un eleve est ajoute ou que sa position GPS est definie, le moteur VRP "
+        "determine le bus optimal et l'ordre des arrets.", body))
 
-    def add_section(title, content):
-        story.append(Paragraph(title, h1_style))
-        for text, bullets in content:
-            if text:
-                story.append(Paragraph(text, body_style))
-            for b in bullets:
-                story.append(Paragraph(b, bullet_style))
+    # ===== 2. CONNEXION =====
+    story.append(Paragraph("2. Connexion et securite", h1))
+    story.append(Paragraph("Chaque utilisateur dispose d'un compte securise :", body))
+    story.append(Paragraph(
+        "- " + B("Ecole (admin)") + " : identifiant = code de l'ecole, "
+        "mot de passe defini a l'inscription", step))
+    story.append(Paragraph(
+        "- " + B("Chauffeur") + " : identifiant = code du bus, "
+        "mot de passe = code du bus (a changer a la 1ere connexion)", step))
+    story.append(Paragraph(
+        "- " + B("Parent / Eleve") + " : identifiant = matricule, "
+        "mot de passe = matricule (a changer a la 1ere connexion)", step))
+    story.append(Paragraph(B("Etapes de connexion :"), body))
+    story.append(Paragraph("1. Aller sur la page d'accueil et cliquer sur " + B("Se connecter"), step))
+    story.append(Paragraph("2. Entrer votre identifiant (code ecole, code bus ou matricule)", step))
+    story.append(Paragraph("3. Entrer votre mot de passe", step))
+    story.append(Paragraph("4. Cliquer sur " + B("Se connecter"), step))
+    story.append(Paragraph(
+        "A la premiere connexion, un changement de mot de passe est " + B("obligatoire") +
+        ". Vous devez entrer un nouveau mot de passe (minimum 4 caracteres) et valider.", step))
+    story.append(Paragraph(
+        "Conseil : les mots de passe par defaut doivent etre remplaces "
+        "des la premiere connexion pour garantir la securite.", note_style))
 
-    add_section("1. Presentation generale", [
-        (B("ScolaLoop") + " est un systeme intelligent de transport scolaire qui optimise les trajets de bus en temps reel. Il combine :", []),
-        ("", [
-            "- " + B("Optimisation des tournees") + " : Probleme VRP resolu par Google OR-Tools",
-            "- " + B("Itineraires routiers reels") + " : Calcul via OSRM (boucle Ecole - eleves - Ecole)",
-            "- " + B("Suivi GPS en temps reel") + " : Position des bus, alertes, replay",
-            "- " + B("Communication parents-ecole") + " : Absences, SMS d'urgence, interface dediee",
-            "- " + B("Gestion des eleves") + " : Inscription, affectation automatique, import Excel",
-        ]),
-        ("Le systeme s'adresse a trois types d'utilisateurs : " + B("l'administration de l'ecole") + ", " + B("les chauffeurs") + " et " + B("les parents / eleves") + ".", []),
-    ])
+    # ===== 3. INTERFACE ADMINISTRATION =====
+    story.append(PageBreak())
+    story.append(Paragraph("3. Interface Administration (Tableau de bord)", h1))
+    story.append(Paragraph(
+        "Le tableau de bord est l'ecran principal de l'administration. Il affiche une "
+        "carte interactive avec les positions des bus, eleves et arrets, ainsi que des "
+        "panneaux lateraux pour gerer les eleves, bus et fonctionnalites.", body))
 
-    add_section("2. Connexion et securite", [
-        ("Chaque utilisateur dispose d'un compte securise :", []),
-        ("", [
-            "- " + B("Ecole (admin)") + " : identifiant = code de l'ecole, mot de passe defini a l'inscription",
-            "- " + B("Chauffeur") + " : identifiant = code du bus, mot de passe = code du bus (a changer a la 1ere connexion)",
-            "- " + B("Parent / Eleve") + " : identifiant = matricule, mot de passe = matricule (a changer a la 1ere connexion)",
-        ]),
-        ("A la premiere connexion, un changement de mot de passe est obligatoire. L'interface parent necessite ensuite de positionner le domicile sur une carte.", []),
-        ("Conseil : les mots de passe par defaut (matricule ou code bus) doivent etre remplaces des la premiere connexion pour garantir la securite.", []),
-    ])
+    # 3.1 Ajouter un eleve
+    story.append(Paragraph("3.1 Ajouter un eleve", h2))
+    story.append(Paragraph(B("Etapes :"), body))
+    story.append(Paragraph("1. Dans le panneau lateral, cliquer sur " + B("Eleves") + " puis " + B("Ajouter un eleve"), step))
+    story.append(Paragraph("2. Remplir le formulaire : matricule, nom, postnom, prenom", step))
+    story.append(Paragraph("3. Saisir l'adresse du domicile de l'eleve", step))
+    story.append(Paragraph("4. Saisir le telephone du parent (pour les SMS)", step))
+    story.append(Paragraph("5. Cliquer sur " + B("Enregistrer"), step))
+    story.append(Paragraph(
+        "L'affectation au bus est " + B("automatique") +
+        " : le systeme determine le bus le plus proche en fonction de la capacite "
+        "disponible et de la position GPS de l'eleve.", body))
+    story.append(Paragraph(
+        "Un compte de connexion est cree automatiquement : identifiant = matricule, "
+        "mot de passe = matricule. L'eleve/parent devra changer son mot de passe "
+        "a la premiere connexion.", body))
 
-    add_section("3. Tableau de bord (Administration)", [
-        ("Le tableau de bord est l'ecran principal de l'administration de l'ecole. Il affiche :", []),
-        ("", [
-            "- " + B("Carte interactive") + " : Positions des bus, eleves et arrets sur Leaflet",
-            "- " + B("Liste des bus") + " : Code, chauffeur, capacite, statut",
-            "- " + B("Liste des eleves") + " : Matricule, nom, bus assigne",
-            "- " + B("Alertes en direct") + " : Retards, exces de vitesse, incidents",
-            "- " + B("Statistiques") + " : Taux de ramassage, eleves pris/restants par bus",
-        ]),
-        ("Le panneau lateral permet d'acceder rapidement a toutes les fonctionnalites : ajout d'eleves, import Excel, maintenance, etc.", []),
-    ])
+    # 3.2 Ajouter un bus
+    story.append(Paragraph("3.2 Ajouter un bus", h2))
+    story.append(Paragraph(B("Etapes :"), body))
+    story.append(Paragraph("1. Dans le panneau lateral, cliquer sur " + B("Bus") + " puis " + B("Ajouter un bus"), step))
+    story.append(Paragraph("2. Saisir le code du bus (identifiant unique)", step))
+    story.append(Paragraph("3. Saisir le nom du chauffeur", step))
+    story.append(Paragraph("4. Saisir la capacite maximale (nombre de places)", step))
+    story.append(Paragraph("5. Cliquer sur " + B("Enregistrer"), step))
+    story.append(Paragraph(
+        "Un compte chauffeur est cree automatiquement : identifiant = code du bus, "
+        "mot de passe = code du bus. Le chauffeur devra changer son mot de passe "
+        "a sa premiere connexion.", body))
 
-    add_section("4. Gestion des eleves", [
-        (B("Ajouter un eleve") + " :", []),
-        ("", [
-            "- Remplir le formulaire (matricule, nom, postnom, prenom, adresse, telephone parent)",
-            "- L'affectation au bus est " + B("automatique") + " (signal post_save, moteur VRP)",
-            "- Un compte de connexion est cree automatiquement (identifiant = matricule)",
-        ]),
-        ("Modifier / Supprimer : cliquer sur l'icone correspondante dans la liste.", []),
-        ("Geler un eleve : exclut temporairement l'eleve des tournees sans le supprimer.", []),
-        ("Reinitialiser le mot de passe : l'eleve devra le personnaliser a sa prochaine connexion.", []),
-        ("Import Excel : pour inscrire plusieurs eleves d'un coup, utilisez l'import Excel (colonnes : matricule, nom, postnom, prenom, adresse, telephone).", []),
-    ])
+    # 3.3 Import Excel
+    story.append(Paragraph("3.3 Importer des eleves ou bus via Excel", h2))
+    story.append(Paragraph(
+        "ScolaLoop supporte l'import en masse via des fichiers Excel (.xlsx) :", body))
+    story.append(Paragraph(B("Pour les eleves :"), body))
+    story.append(Paragraph("1. Preparer un fichier Excel avec les colonnes : matricule, nom, postnom, prenom, adresse, telephone", step))
+    story.append(Paragraph("2. Dans le panneau lateral, cliquer sur " + B("Import eleves"), step))
+    story.append(Paragraph("3. Selectionner le fichier Excel", step))
+    story.append(Paragraph("4. Cliquer sur " + B("Importer"), step))
+    story.append(Paragraph("5. Verifier le recapitulatif : eleves importes, doublons evites", step))
+    story.append(Paragraph(B("Pour les bus :"), body))
+    story.append(Paragraph("1. Preparer un fichier Excel avec les colonnes : code_bus, nom_chauffeur, capacite", step))
+    story.append(Paragraph("2. Dans le panneau lateral, cliquer sur " + B("Import bus"), step))
+    story.append(Paragraph("3. Selectionner le fichier et cliquer sur " + B("Importer"), step))
+    story.append(Paragraph(
+        "L'import verifie automatiquement les doublons et valide les donnees avant insertion.", body))
 
-    add_section("5. Gestion de la flotte de bus", [
-        (B("Ajouter un bus") + " :", []),
-        ("", [
-            "- Remplir le formulaire (code bus, nom du chauffeur, capacite)",
-            "- Un compte chauffeur est cree automatiquement (identifiant = code bus)",
-        ]),
-        ("Modifier / Supprimer : operations classiques depuis la liste.", []),
-        ("Reinitialiser le mot de passe chauffeur : le chauffeur devra le personnaliser.", []),
-        ("Import Excel : pour ajouter plusieurs bus, utilisez l'import Excel (colonnes : code_bus, nom_chauffeur, capacite).", []),
-    ])
+    # 3.4 Carte et routes
+    story.append(Paragraph("3.4 Consulter la carte et les routes", h2))
+    story.append(Paragraph(B("Etapes :"), body))
+    story.append(Paragraph("1. Depuis le tableau de bord, la carte s'affiche automatiquement", step))
+    story.append(Paragraph("2. Les " + B("bus") + " sont affichés en jaune avec leur code", step))
+    story.append(Paragraph("3. Les " + B("eleves") + " sont affichés avec leur domicile", step))
+    story.append(Paragraph("4. Les " + B("arrets") + " et le tracé des routes sont visibles", step))
+    story.append(Paragraph("5. Cliquer sur un marqueur pour voir les details (chauffeur, capacite, etc.)", step))
+    story.append(Paragraph(
+        "Les statistiques en haut de page indiquent en temps reel : nombre d'eleves "
+        "pris, restants, taux de ramassage, alertes de retard et d'excès de vitesse.", body))
 
-    add_section("6. Importation Excel", [
-        ("ScolaLoop supporte l'import en masse via des fichiers Excel (.xlsx) :", []),
-        ("", [
-            "- " + B("Eleves") + " : matricule, nom, postnom, prenom, adresse, telephone",
-            "- " + B("Bus") + " : code_bus, nom_chauffeur, capacite",
-            "- " + B("Eleves (gel)") + " : meme format, mais importe uniquement les statuts de gel",
-        ]),
-        ("L'import verifie automatiquement les doublons et valide les donnees avant insertion.", []),
-    ])
+    # 3.5 Absences et gel
+    story.append(Paragraph("3.5 Gerer les absences et le gel", h2))
+    story.append(Paragraph(B("Geler un eleve :"), body))
+    story.append(Paragraph("1. Dans la liste des eleves, cliquer sur l'icone " + B("geler") + " (flocon) a cote de l'eleve", step))
+    story.append(Paragraph("2. L'eleve est automatiquement exclu des prochaines tournees", step))
+    story.append(Paragraph("3. Pour degeler, cliquer a nouveau sur l'icone", step))
+    story.append(Paragraph(B("Reinitialiser le mot de passe d'un eleve :"), body))
+    story.append(Paragraph("1. Cliquer sur l'icone " + B("reinitialiser le mot de passe") + " dans la liste", step))
+    story.append(Paragraph("2. Entrer le nouveau mot de passe (2 fois pour confirmation)", step))
+    story.append(Paragraph("3. L'eleve devra personnaliser ce mot de passe a sa prochaine connexion", step))
 
-    add_section("7. Optimisation des tournees", [
-        ("Le moteur d'optimisation fonctionne automatiquement :", []),
-        ("", [
-            "- A chaque ajout/modification d'eleve, le signal post_save relance le calcul",
-            "- L'algorithme VRP repartit les eleves sur les bus",
-            "- L'ordre des arrets est calcule par OR-Tools (TSP interne par bus)",
-            "- Les itineraires routiers reels sont obtenus via OSRM",
-            "- Le resultat est une boucle : Ecole - arrets - Ecole",
-        ]),
-        ("Recalcul : si vous modifiez la position d'un eleve, les tournees sont recalculees automatiquement.", []),
-    ])
+    # 3.6 SMS d'urgence
+    story.append(Paragraph("3.6 Envoyer un SMS d'urgence", h2))
+    story.append(Paragraph(
+        "Permet d'envoyer un message a tous les parents des eleves d'un bus donne :", body))
+    story.append(Paragraph("1. Dans le panneau lateral, cliquer sur " + B("SMS d'urgence"), step))
+    story.append(Paragraph("2. Selectionner le bus concerne", step))
+    story.append(Paragraph("3. Saisir le message d'urgence", step))
+    story.append(Paragraph("4. Cliquer sur " + B("Envoyer"), step))
+    story.append(Paragraph("5. Les SMS sont envoyes a tous les parents des eleves de ce bus", step))
 
-    add_section("8. Suivi GPS en temps reel", [
-        ("Le suivi GPS permet de :", []),
-        ("", [
-            "- " + B("Localiser les bus") + " en temps reel sur la carte",
-            "- " + B("Recevoir des alertes") + " d'exces de vitesse",
-            "- " + B("Estimer les retards") + " par rapport a l'horaire prevu",
-            "- " + B("Rejouer les trajets") + " passes via le replay GPS",
-        ]),
-        ("La position GPS est envoyee par le chauffeur via l'application mobile ou le formulaire web dedie.", []),
-    ])
+    # 3.7 Maintenance
+    story.append(Paragraph("3.7 Enregistrer une maintenance", h2))
+    story.append(Paragraph(B("Etapes :"), body))
+    story.append(Paragraph("1. Dans le panneau lateral, cliquer sur " + B("Maintenance"), step))
+    story.append(Paragraph("2. Selectionner le bus concerne", step))
+    story.append(Paragraph("3. Choisir le type d'intervention (revision, vidange, pneus, etc.)", step))
+    story.append(Paragraph("4. Saisir le cout et la date de l'intervention", step))
+    story.append(Paragraph("5. Saisir la prochaine echeance (kilometrage ou date)", step))
+    story.append(Paragraph("6. Cliquer sur " + B("Enregistrer"), step))
+    story.append(Paragraph(
+        "L'historique complet des maintenances par bus est visible dans le panneau "
+        "de maintenance du tableau de bord.", body))
 
-    add_section("9. Interface chauffeur", [
-        ("Le chauffeur dispose d'une interface simplifiee :", []),
-        ("", [
-            "- " + B("Carte du trajet") + " : L'itineraire a suivre avec les arrets",
-            "- " + B("Marquage des eleves") + " : Confirmer la prise en charge",
-            "- " + B("Envoi de position") + " : Mettre a jour la position GPS",
-            "- " + B("Signalement incident") + " : Declarer un probleme (panne, accident, etc.)",
-            "- " + B("Synchronisation hors-ligne") + " : Donnees envoyees automatiquement",
-        ]),
-    ])
+    # ===== 4. INTERFACE CHAUFFEUR =====
+    story.append(PageBreak())
+    story.append(Paragraph("4. Interface Chauffeur", h1))
+    story.append(Paragraph(
+        "L'interface chauffeur est optimisee pour un usage sur mobile pendant la conduite. "
+        "Elle affiche une carte avec le trajet a suivre, les arrets, et les eleves a prendre.", body))
 
-    add_section("10. Interface parent / eleve", [
-        ("L'interface parent permet de :", []),
-        ("", [
-            "- " + B("Suivre le bus") + " en temps reel sur la carte",
-            "- " + B("Voir l'etat du ramassage") + " : statut du trajet, estimation du temps d'arrivee",
-            "- " + B("Signaler une absence") + " : Le bus ne s'arretera pas chez vous",
-            "- " + B("Afficher son domicile") + " sur la carte",
-        ]),
-        ("Au premier acces, le parent doit positionner le domicile de l'eleve sur la carte (clic ou position GPS).", []),
-        ("Notification : une alerte est envoyee lorsque le bus est proche du domicile (100 m).", []),
-    ])
+    # 4.1 Demarrer la journee
+    story.append(Paragraph("4.1 Demarrer la journee", h2))
+    story.append(Paragraph(B("Etapes :"), body))
+    story.append(Paragraph("1. Se connecter avec le code du bus et le mot de passe", step))
+    story.append(Paragraph("2. Autoriser la geolocalisation quand le navigateur le demande", step))
+    story.append(Paragraph("3. L'indicateur GPS passe a " + B("vert") + " : le suivi est actif", step))
+    story.append(Paragraph("4. Le trajet du jour s'affiche sur la carte avec les arrets", step))
+    story.append(Paragraph(
+        "L'ecran reste actif meme en mode veille (anti-verrouillage) pour ne pas "
+        "interrompre le suivi GPS.", note_style))
 
-    add_section("11. Statistiques", [
-        ("La page statistiques fournit un tableau d'ensemble :", []),
-        ("", [
-            "- Nombre d'eleves assignes / pris / restants par bus",
-            "- Taux de ramassage par bus",
-            "- Distance totale et duree estimee des tournees",
-            "- Evolution dans le temps",
-        ]),
-    ])
+    # 4.2 Suivre le trajet
+    story.append(Paragraph("4.2 Suivre le trajet sur la carte", h2))
+    story.append(Paragraph(B("Elements de l'interface :"), body))
+    story.append(Paragraph("- " + B("Carte") + " : le tracé du trajet avec les arrets et eleves", step))
+    story.append(Paragraph("- " + B("Statistiques") + " : nombre d'eleves pris, restants, total", step))
+    story.append(Paragraph("- " + B("Indicateur GPS") + " : etat du signal GPS en temps reel", step))
+    story.append(Paragraph("- " + B("Indicateur de vitesse") + " : vitesse actuelle en km/h", step))
+    story.append(Paragraph("- " + B("Guidage vocal") + " : activez pour des instructions audio", step))
+    story.append(Paragraph("- " + B("Suivi GPS") + " : activez/desactivez le partage de position", step))
+    story.append(Paragraph(B("Activer le guidage vocal :"), body))
+    story.append(Paragraph("1. Cliquer sur le bouton " + B("Activer le guidage vocal"), step))
+    story.append(Paragraph("2. Des instructions audio indiquent le prochain arret", step))
+    story.append(Paragraph("3. Pour desactiver, cliquer a nouveau sur le bouton", step))
 
-    add_section("12. Maintenance de la flotte", [
-        ("L'administration peut enregistrer les interventions d'entretien :", []),
-        ("", [
-            "- " + B("Type d'intervention") + " : revision, changement de pneus, vidange, etc.",
-            "- " + B("Cout") + " et " + B("date") + " de l'intervention",
-            "- " + B("Prochaine echeance") + " (kilometrage ou date)",
-        ]),
-        ("Un historique complet par bus est disponible depuis le tableau de bord.", []),
-    ])
+    # 4.3 Prendre un eleve
+    story.append(Paragraph("4.3 Prendre un eleve (embarquement)", h2))
+    story.append(Paragraph(
+        "Quand le bus arrive a l'arret d'un eleve, une modale s'affiche automatiquement :", body))
+    story.append(Paragraph(B("Etapes :"), body))
+    story.append(Paragraph("1. La modale affiche le nom et matricule de l'eleve", step))
+    story.append(Paragraph("2. Verifier visuellement que c'est le bon eleve", step))
+    story.append(Paragraph("3. Cliquer sur " + B("PRENDRE L'ELEVE") + " pour confirmer l'embarquement", step))
+    story.append(Paragraph("4. Le compteur 'Pris' s'incremente, le compteur 'Restants' decremente", step))
+    story.append(Paragraph("5. Si l'eleve n'est pas present, cliquer sur " + B("Annuler"), step))
+    story.append(Paragraph(
+        "Le nombre d'eleves pris/restants est mis a jour en temps reel "
+        "et visible par l'administration et les parents.", note_style))
 
-    add_section("13. Administration generale", [
-        ("L'administration generale (superutilisateur) gere l'ensemble des ecoles :", []),
-        ("", [
-            "- " + B("Liste des ecoles") + " : Activer / Desactiver",
-            "- " + B("Statistiques globales") + " : Nombre total d'eleves, bus, routes",
-            "- " + B("Creation d'ecoles") + " : Inscription directe",
-            "- " + B("Suppression") + " : Suppression definitive avec toutes les donnees",
-            "- " + B("Reinitialisation des mots de passe") + " des comptes ecole",
-        ]),
-    ])
+    # 4.4 Signaler un incident
+    story.append(Paragraph("4.4 Signaler un incident", h2))
+    story.append(Paragraph(
+        "En cas de probleme pendant le trajet, le chauffeur peut signaler un incident :", body))
+    story.append(Paragraph(B("Etapes :"), body))
+    story.append(Paragraph("1. Dans le panneau " + B("Signaler un incident") + ", choisir le type :", step))
+    story.append(Paragraph("   - " + B("Embouteillage") + " (bouton jaune)", substep))
+    story.append(Paragraph("   - " + B("Panne") + " (bouton rouge)", substep))
+    story.append(Paragraph("   - " + B("Accident") + " (bouton rouge)", substep))
+    story.append(Paragraph("   - " + B("Autre") + " (bouton gris)", substep))
+    story.append(Paragraph("2. L'incident est enregistre et visible par l'administration", step))
+    story.append(Paragraph("3. L'administration peut resoudre l'incident depuis le tableau de bord", step))
+
+    # 4.5 Mode hors-ligne
+    story.append(Paragraph("4.5 Mode hors-ligne", h2))
+    story.append(Paragraph(
+        "Si le chauffeur se retrouve sans connexion internet :", body))
+    story.append(Paragraph("1. L'indicateur de connectivite passe a " + B("orange (hors-ligne)"), step))
+    story.append(Paragraph("2. Le chauffeur peut continuer a marquer les eleves pris normalement", step))
+    story.append(Paragraph("3. Les donnees sont stockees localement sur l'appareil", step))
+    story.append(Paragraph("4. Des que la connexion revient, les donnees sont " + B("synchronisees automatiquement"), step))
+    story.append(Paragraph("5. L'indicateur repasse a " + B("vert (en ligne)"), step))
+    story.append(Paragraph(
+        "Le mode hors-ligne assure la continuite du service meme dans les zones "
+        "sans reseau.", note_style))
+
+    # ===== 5. INTERFACE PARENT =====
+    story.append(PageBreak())
+    story.append(Paragraph("5. Interface Parent / Eleve", h1))
+    story.append(Paragraph(
+        "L'interface parent permet de suivre le bus en temps reel, de connaitre le statut "
+        "du ramassage, et de signaler les absences.", body))
+
+    # 5.1 Premiere connexion
+    story.append(Paragraph("5.1 Premiere connexion et configuration", h2))
+    story.append(Paragraph(B("Etapes :"), body))
+    story.append(Paragraph("1. Se connecter avec le matricule de l'eleve et le mot de passe", step))
+    story.append(Paragraph("2. Changer le mot de passe (obligatoire a la 1ere connexion)", step))
+    story.append(Paragraph("3. La page de configuration du domicile s'affiche", step))
+    story.append(Paragraph("4. Sur la carte, " + B("cliquer sur votre domicile") + " pour placer le marqueur", step))
+    story.append(Paragraph("   OU cliquer sur " + B("Utiliser ma position GPS") + " pour auto-detecter", step))
+    story.append(Paragraph("5. Cliquer sur " + B("Enregistrer") + " pour valider la position", step))
+    story.append(Paragraph(
+        "Des que la position est enregistree, le systeme determine automatiquement "
+        "le bus le plus proche et l'affecte a l'eleve.", body))
+    story.append(Paragraph(
+        "Attention : l'acces a l'interface parent est bloque tant que le domicile "
+        "n'est pas positionne sur la carte.", warn_style))
+
+    # 5.2 Suivre le bus
+    story.append(Paragraph("5.2 Suivre le bus en temps reel", h2))
+    story.append(Paragraph(
+        "Une fois connecte, l'interface parent affiche :", body))
+    story.append(Paragraph("- " + B("Carte") + " avec le bus en jaune, votre domicile en bleu, et le tracé", step))
+    story.append(Paragraph("- " + B("Statut du trajet") + " : en route, a l'arret, ou en attente", step))
+    story.append(Paragraph("- " + B("Distance restante") + " entre le bus et votre domicile", step))
+    story.append(Paragraph("- " + B("Nom du chauffeur") + " et code du bus", step))
+    story.append(Paragraph(B("Fonctionnalites :"), body))
+    story.append(Paragraph("- Le bus est " + B("localise en temps reel") + " sur la carte", step))
+    story.append(Paragraph("- Une " + B("notification sonore") + " se declenche quand le bus est a 100 m de chez vous", step))
+    story.append(Paragraph("- Le " + B("statut du ramassage") + " indique si votre enfant est deja pris", step))
+    story.append(Paragraph("- Le " + B("temps d'arrivee estime") + " est calcule en fonction de la position actuelle", step))
+
+    # 5.3 Signaler une absence
+    story.append(Paragraph("5.3 Signaler une absence", h2))
+    story.append(Paragraph(B("Etapes :"), body))
+    story.append(Paragraph("1. Sur l'interface parent, cliquer sur " + B("Signaler une absence"), step))
+    story.append(Paragraph("2. Le bus ne s'arretera pas chez vous aujourd'hui", step))
+    story.append(Paragraph("3. Pour annuler l'absence, cliquer sur " + B("Annuler l'absence"), step))
+    story.append(Paragraph(
+        "Un eleve absent est automatiquement exclu des arrets du jour : "
+        "le bus ne s'arretera pas a son domicile.", body))
+
+    # ===== 6. ADMINISTRATION GENERALE =====
+    story.append(PageBreak())
+    story.append(Paragraph("6. Administration generale (superutilisateur)", h1))
+    story.append(Paragraph(
+        "L'administration generale gere l'ensemble des ecoles inscrites sur la plateforme.", body))
+    story.append(Paragraph(B("Fonctionnalites :"), body))
+    story.append(Paragraph("- " + B("Liste des ecoles") + " : voir toutes les ecoles avec leurs statistiques", step))
+    story.append(Paragraph("- " + B("Activer / Desactiver") + " une ecole : desactive l'acces pour cette ecole", step))
+    story.append(Paragraph("- " + B("Statistiques globales") + " : nombre total d'eleves, bus, routes, taux de ramassage", step))
+    story.append(Paragraph("- " + B("Creation d'ecoles") + " : inscrire une nouvelle ecole directement", step))
+    story.append(Paragraph("- " + B("Suppression") + " : supprimer une ecole et toutes ses donnees", step))
+    story.append(Paragraph("- " + B("Reinitialisation des mots de passe") + " des comptes ecole", step))
+    story.append(Paragraph(B("Etapes pour activer/desactiver une ecole :"), body))
+    story.append(Paragraph("1. Aller dans " + B("Administration generale"), step))
+    story.append(Paragraph("2. Trouver l'ecole dans la liste", step))
+    story.append(Paragraph("3. Cliquer sur le bouton " + B("Activer") + " ou " + B("Desactiver"), step))
+    story.append(Paragraph(
+        "Une ecole desactivee ne peut plus se connecter : les utilisateurs "
+        "sont deconnectes et rediriges vers la page de connexion.", body))
+
+    # ===== 7. FAQ =====
+    story.append(PageBreak())
+    story.append(Paragraph("7. FAQ et depannage", h1))
+
+    story.append(Paragraph(B("Q : Je ne vois pas de bus sur la carte ?"), body))
+    story.append(Paragraph("R : Verifiez que des bus sont ajoutes et qu'au moins un chauffeur est connecte. "
+                           "Les bus n'apparaissent sur la carte que lorsqu'ils sont en service.", body))
+
+    story.append(Paragraph(B("Q : Un eleve n'est pas affecte a un bus ?"), body))
+    story.append(Paragraph("R : L'eleve doit avoir une position GPS valide (adresse ou position sur la carte). "
+                           "L'affectation est automatique mais necessite une position.", body))
+
+    story.append(Paragraph(B("Q : Le chauffeur n'arrive pas a se connecter ?"), body))
+    story.append(Paragraph("R : L'identifiant est le code du bus, le mot de passe par defaut est aussi le code du bus. "
+                           "L'ecole peut reinitialiser le mot de passe depuis le tableau de bord.", body))
+
+    story.append(Paragraph(B("Q : Le GPS ne fonctionne pas chez le chauffeur ?"), body))
+    story.append(Paragraph("R : Verifiez que la geolocalisation est autorisee dans le navigateur. "
+                           "Si le probleme persiste, essayez de recharger la page.", body))
+
+    story.append(Paragraph(B("Q : Comment modifier la position du domicile d'un eleve ?"), body))
+    story.append(Paragraph("R : L'eleve/parent doit se connecter et passer par l'interface parent. "
+                           "L'administration ne peut pas modifier la position du domicile directement.", body))
+
+    story.append(Paragraph(B("Q : Le mode hors-ligne fonctionne-t-il ?"), body))
+    story.append(Paragraph("R : Oui. Le chauffeur peut continuer a marquer les eleves pris sans connexion. "
+                           "Les donnees sont synchronisees automatiquement quand le reseau revient.", body))
+
+    story.append(Paragraph(B("Q : Comment exporter les donnees ?"), body))
+    story.append(Paragraph("R : Depuis le tableau de bord, les boutons d'export Excel permettent de "
+                           "telecharger la liste des eleves par bus, les feuilles de route, etc.", body))
+
+    story.append(Paragraph(B("Q : Comment contacter le support ?"), body))
+    story.append(Paragraph("R : En cas de probleme, contactez l'administration de votre ecole ou ESTECH "
+                           "directement via le formulaire de contact sur le site.", body))
 
     doc.build(story)
     buf.seek(0)

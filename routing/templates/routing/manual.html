@@ -73,14 +73,22 @@
             display: flex; align-items: center; gap: 0.6rem;
         }
         .panel h2 i { color: var(--indigo); }
+        .panel h3 { font-size: 1rem; color: var(--indigo); margin: 1.2rem 0 0.5rem; }
         .panel p, .panel li { font-size: 0.9rem; color: #475569; line-height: 1.7; }
         .panel ul { padding-left: 1.4rem; margin: 0.4rem 0; }
         .panel ul li { margin-bottom: 0.3rem; }
+        .panel ol { padding-left: 1.4rem; margin: 0.4rem 0; }
+        .panel ol li { margin-bottom: 0.3rem; }
         .panel .tip {
             background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 0 8px 8px 0;
             padding: 0.7rem 1rem; margin-top: 0.8rem; font-size: 0.85rem; color: #166534;
         }
         .panel .tip i { color: #10b981; }
+        .panel .warn {
+            background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 0 8px 8px 0;
+            padding: 0.7rem 1rem; margin-top: 0.8rem; font-size: 0.85rem; color: #991b1b;
+        }
+        .panel .warn i { color: #ef4444; }
         .toc {
             background: white; border-radius: 18px; padding: 1.4rem 1.8rem;
             box-shadow: 0 12px 34px rgba(79, 70, 229, 0.1); border: 1px solid rgba(226,232,240,0.8);
@@ -131,17 +139,35 @@
             <ol>
                 <li><a href="#s1">Présentation générale</a></li>
                 <li><a href="#s2">Connexion et sécurité</a></li>
-                <li><a href="#s3">Tableau de bord (Administration)</a></li>
-                <li><a href="#s4">Gestion des élèves</a></li>
-                <li><a href="#s5">Gestion de la flotte de bus</a></li>
-                <li><a href="#s6">Importation Excel</a></li>
-                <li><a href="#s7">Optimisation des tournées</a></li>
-                <li><a href="#s8">Suivi GPS en temps réel</a></li>
-                <li><a href="#s9">Interface chauffeur</a></li>
-                <li><a href="#s10">Interface parent / élève</a></li>
-                <li><a href="#s11">Statistiques</a></li>
-                <li><a href="#s12">Maintenance de la flotte</a></li>
-                <li><a href="#s13">Administration générale</a></li>
+                <li><a href="#s3">Interface Administration (Tableau de bord)</a>
+                    <ol>
+                        <li><a href="#s3-1">Ajouter un élève</a></li>
+                        <li><a href="#s3-2">Ajouter un bus</a></li>
+                        <li><a href="#s3-3">Importer des élèves ou bus via Excel</a></li>
+                        <li><a href="#s3-4">Consulter la carte et les routes</a></li>
+                        <li><a href="#s3-5">Gérer les absences et le gel</a></li>
+                        <li><a href="#s3-6">Envoyer un SMS d'urgence</a></li>
+                        <li><a href="#s3-7">Enregistrer une maintenance</a></li>
+                    </ol>
+                </li>
+                <li><a href="#s4">Interface Chauffeur</a>
+                    <ol>
+                        <li><a href="#s4-1">Démarrer la journée</a></li>
+                        <li><a href="#s4-2">Suivre le trajet sur la carte</a></li>
+                        <li><a href="#s4-3">Prendre un élève (embarquement)</a></li>
+                        <li><a href="#s4-4">Signaler un incident</a></li>
+                        <li><a href="#s4-5">Mode hors-ligne</a></li>
+                    </ol>
+                </li>
+                <li><a href="#s5">Interface Parent / Élève</a>
+                    <ol>
+                        <li><a href="#s5-1">Première connexion et configuration</a></li>
+                        <li><a href="#s5-2">Suivre le bus en temps réel</a></li>
+                        <li><a href="#s5-3">Signaler une absence</a></li>
+                    </ol>
+                </li>
+                <li><a href="#s6">Administration générale (superutilisateur)</a></li>
+                <li><a href="#s7">FAQ et dépannage</a></li>
             </ol>
         </div>
 
@@ -153,10 +179,11 @@
                 <li><strong>Optimisation des tournées</strong> — Problème VRP (Vehicle Routing Problem) résolu par Google OR-Tools</li>
                 <li><strong>Itinéraires routiers réels</strong> — Calcul via OSRM (boucle École → élèves → École)</li>
                 <li><strong>Suivi GPS en temps réel</strong> — Position des bus, alertes, replay</li>
-                <li><strong>Communication parents-école</strong> — Absences, SMS d'urgence, interface dédiée</li>
+                <li><strong>Communication parents-école</strong> — Absences, SMS d'urgence</li>
                 <li><strong>Gestion des élèves</strong> — Inscription, affectation automatique, import Excel</li>
             </ul>
             <p style="margin-top:0.5rem;">Le système s'adresse à trois types d'utilisateurs : <strong>l'administration de l'école</strong>, <strong>les chauffeurs</strong> et <strong>les parents / élèves</strong>.</p>
+            <p>L'affectation des élèves aux bus est <strong>entièrement automatique</strong> : dès qu'un élève est ajouté ou que sa position GPS est définie, le moteur VRP détermine le bus optimal et l'ordre des arrêts.</p>
         </div>
 
         <!-- 2. Connexion -->
@@ -168,153 +195,291 @@
                 <li><strong>Chauffeur</strong> : identifiant = code du bus, mot de passe = code du bus (à changer à la 1ère connexion)</li>
                 <li><strong>Parent / Élève</strong> : identifiant = matricule, mot de passe = matricule (à changer à la 1ère connexion)</li>
             </ul>
-            <p style="margin-top:0.5rem;">À la première connexion, un changement de mot de passe est <strong>obligatoire</strong>. L'interface parent nécessite ensuite de positionner le domicile sur une carte.</p>
+            <p style="margin-top:0.8rem;"><strong>Étapes de connexion :</strong></p>
+            <ol>
+                <li>Aller sur la page d'accueil et cliquer sur <strong>Se connecter</strong></li>
+                <li>Entrer votre identifiant (code école, code bus ou matricule)</li>
+                <li>Entrer votre mot de passe</li>
+                <li>Cliquer sur <strong>Se connecter</strong></li>
+            </ol>
+            <p style="margin-top:0.5rem;">À la première connexion, un changement de mot de passe est <strong>obligatoire</strong>. Vous devez entrer un nouveau mot de passe (minimum 4 caractères) et valider.</p>
             <div class="tip"><i class="fa-solid fa-lightbulb"></i> Les mots de passe par défaut (matricule ou code bus) doivent être remplacés dès la première connexion pour garantir la sécurité.</div>
         </div>
 
-        <!-- 3. Dashboard -->
+        <!-- 3. Interface Administration -->
         <div class="panel" id="s3">
-            <h2><i class="fa-solid fa-gauge-high"></i> 3. Tableau de bord (Administration)</h2>
-            <p>Le tableau de bord est l'écran principal de l'administration de l'école. Il affiche :</p>
-            <ul>
-                <li><strong>Carte interactive</strong> — Positions des bus, élèves et arrêts sur Leaflet</li>
-                <li><strong>Liste des bus</strong> — Code, chauffeur, capacité, statut</li>
-                <li><strong>Liste des élèves</strong> — Matricule, nom, bus assigné</li>
-                <li><strong>Alertes en direct</strong> — Retards, excès de vitesse, incidents</li>
-                <li><strong>Statistiques</strong> — Taux de ramassage, élèves pris/restants par bus</li>
-            </ul>
-            <p style="margin-top:0.5rem;">Le panneau latéral permet d'accéder rapidement à toutes les fonctionnalités : ajout d'élèves, import Excel, maintenance, etc.</p>
-        </div>
+            <h2><i class="fa-solid fa-gauge-high"></i> 3. Interface Administration (Tableau de bord)</h2>
+            <p>Le tableau de bord est l'écran principal de l'administration. Il affiche une carte interactive avec les positions des bus, élèves et arrêts, ainsi que des panneaux latéraux pour gérer les élèves, bus et fonctionnalités.</p>
 
-        <!-- 4. Élèves -->
-        <div class="panel" id="s4">
-            <h2><i class="fa-solid fa-user-graduate"></i> 4. Gestion des élèves</h2>
-            <p><strong>Ajouter un élève :</strong></p>
-            <ul>
-                <li>Remplir le formulaire (matricule, nom, postnom, prénom, adresse, téléphone parent)</li>
-                <li>L'affectation au bus est <strong>automatique</strong> (signal post_save → moteur VRP)</li>
-                <li>Un compte de connexion est créé automatiquement (identifiant = matricule)</li>
-            </ul>
-            <p style="margin-top:0.5rem;"><strong>Modifier / Supprimer :</strong> cliquer sur l'icône correspondante dans la liste.</p>
-            <p><strong>Geler un élève :</strong> exclut temporairement l'élève des tournées sans le supprimer.</p>
-            <p><strong>Réinitialiser le mot de passe :</strong> l'élève devra le personnaliser à sa prochaine connexion.</p>
-            <div class="tip"><i class="fa-solid fa-lightbulb"></i> <strong>Import Excel :</strong> pour inscrire plusieurs élèves d'un coup, utilisez l'import Excel (colonnes : matricule, nom, postnom, prénom, adresse, téléphone).</div>
-        </div>
+            <!-- 3.1 -->
+            <h3 id="s3-1">3.1 Ajouter un élève</h3>
+            <p><strong>Étapes :</strong></p>
+            <ol>
+                <li>Dans le panneau latéral, cliquer sur <strong>Élèves</strong> puis <strong>Ajouter un élève</strong></li>
+                <li>Remplir le formulaire : matricule, nom, postnom, prénom</li>
+                <li>Saisir l'adresse du domicile de l'élève</li>
+                <li>Saisir le téléphone du parent (pour les SMS)</li>
+                <li>Cliquer sur <strong>Enregistrer</strong></li>
+            </ol>
+            <p>L'affectation au bus est <strong>automatique</strong> : le système détermine le bus le plus proche en fonction de la capacité disponible et de la position GPS de l'élève.</p>
+            <p>Un compte de connexion est créé automatiquement : identifiant = matricule, mot de passe = matricule. L'élève/parent devra changer son mot de passe à la première connexion.</p>
 
-        <!-- 5. Bus -->
-        <div class="panel" id="s5">
-            <h2><i class="fa-solid fa-bus"></i> 5. Gestion de la flotte de bus</h2>
-            <p><strong>Ajouter un bus :</strong></p>
-            <ul>
-                <li>Remplir le formulaire (code bus, nom du chauffeur, capacité)</li>
-                <li>Un compte chauffeur est créé automatiquement (identifiant = code bus)</li>
-            </ul>
-            <p style="margin-top:0.5rem;"><strong>Modifier / Supprimer :</strong> opérations classiques depuis la liste.</p>
-            <p><strong>Réinitialiser le mot de passe chauffeur :</strong> le chauffeur devra le personnaliser.</p>
-            <div class="tip"><i class="fa-solid fa-lightbulb"></i> <strong>Import Excel :</strong> pour ajouter plusieurs bus, utilisez l'import Excel (colonnes : code_bus, nom_chauffeur, capacite).</div>
-        </div>
+            <!-- 3.2 -->
+            <h3 id="s3-2">3.2 Ajouter un bus</h3>
+            <p><strong>Étapes :</strong></p>
+            <ol>
+                <li>Dans le panneau latéral, cliquer sur <strong>Bus</strong> puis <strong>Ajouter un bus</strong></li>
+                <li>Saisir le code du bus (identifiant unique)</li>
+                <li>Saisir le nom du chauffeur</li>
+                <li>Saisir la capacité maximale (nombre de places)</li>
+                <li>Cliquer sur <strong>Enregistrer</strong></li>
+            </ol>
+            <p>Un compte chauffeur est créé automatiquement : identifiant = code du bus, mot de passe = code du bus. Le chauffeur devra changer son mot de passe à sa première connexion.</p>
 
-        <!-- 6. Import Excel -->
-        <div class="panel" id="s6">
-            <h2><i class="fa-solid fa-file-excel"></i> 6. Importation Excel</h2>
+            <!-- 3.3 -->
+            <h3 id="s3-3">3.3 Importer des élèves ou bus via Excel</h3>
             <p>ScolaLoop supporte l'import en masse via des fichiers Excel (.xlsx) :</p>
-            <ul>
-                <li><strong>Élèves</strong> : matricule, nom, postnom, prénom, adresse, téléphone</li>
-                <li><strong>Bus</strong> : code_bus, nom_chauffeur, capacite</li>
-                <li><strong>Élèves (gel)</strong> : même format, mais importe uniquement les statuts de gel</li>
-            </ul>
-            <p style="margin-top:0.5rem;">L'import vérifie automatiquement les doublons et valide les données avant insertion.</p>
+            <p><strong>Pour les élèves :</strong></p>
+            <ol>
+                <li>Préparer un fichier Excel avec les colonnes : matricule, nom, postnom, prénom, adresse, téléphone</li>
+                <li>Dans le panneau latéral, cliquer sur <strong>Import élèves</strong></li>
+                <li>Sélectionner le fichier Excel</li>
+                <li>Cliquer sur <strong>Importer</strong></li>
+                <li>Vérifier le récapitulatif : élèves importés, doublons évités</li>
+            </ol>
+            <p><strong>Pour les bus :</strong></p>
+            <ol>
+                <li>Préparer un fichier Excel avec les colonnes : code_bus, nom_chauffeur, capacite</li>
+                <li>Dans le panneau latéral, cliquer sur <strong>Import bus</strong></li>
+                <li>Sélectionner le fichier et cliquer sur <strong>Importer</strong></li>
+            </ol>
+            <p>L'import vérifie automatiquement les doublons et valide les données avant insertion.</p>
+
+            <!-- 3.4 -->
+            <h3 id="s3-4">3.4 Consulter la carte et les routes</h3>
+            <p><strong>Étapes :</strong></p>
+            <ol>
+                <li>Depuis le tableau de bord, la carte s'affiche automatiquement</li>
+                <li>Les <strong>bus</strong> sont affichés en jaune avec leur code</li>
+                <li>Les <strong>élèves</strong> sont affichés avec leur domicile</li>
+                <li>Les <strong>arrêts</strong> et le tracé des routes sont visibles</li>
+                <li>Cliquer sur un marqueur pour voir les détails (chauffeur, capacité, etc.)</li>
+            </ol>
+            <p>Les statistiques en haut de page indiquent en temps réel : nombre d'élèves pris, restants, taux de ramassage, alertes de retard et d'excès de vitesse.</p>
+
+            <!-- 3.5 -->
+            <h3 id="s3-5">3.5 Gérer les absences et le gel</h3>
+            <p><strong>Geler un élève :</strong></p>
+            <ol>
+                <li>Dans la liste des élèves, cliquer sur l'icône <strong>geler</strong> (flocon) à côté de l'élève</li>
+                <li>L'élève est automatiquement exclu des prochaines tournées</li>
+                <li>Pour dégeler, cliquer à nouveau sur l'icône</li>
+            </ol>
+            <p><strong>Réinitialiser le mot de passe d'un élève :</strong></p>
+            <ol>
+                <li>Cliquer sur l'icône <strong>réinitialiser le mot de passe</strong> dans la liste</li>
+                <li>Entrer le nouveau mot de passe (2 fois pour confirmation)</li>
+                <li>L'élève devra personnaliser ce mot de passe à sa prochaine connexion</li>
+            </ol>
+
+            <!-- 3.6 -->
+            <h3 id="s3-6">3.6 Envoyer un SMS d'urgence</h3>
+            <p>Permet d'envoyer un message à tous les parents des élèves d'un bus donné :</p>
+            <ol>
+                <li>Dans le panneau latéral, cliquer sur <strong>SMS d'urgence</strong></li>
+                <li>Sélectionner le bus concerné</li>
+                <li>Saisir le message d'urgence</li>
+                <li>Cliquer sur <strong>Envoyer</strong></li>
+                <li>Les SMS sont envoyés à tous les parents des élèves de ce bus</li>
+            </ol>
+
+            <!-- 3.7 -->
+            <h3 id="s3-7">3.7 Enregistrer une maintenance</h3>
+            <p><strong>Étapes :</strong></p>
+            <ol>
+                <li>Dans le panneau latéral, cliquer sur <strong>Maintenance</strong></li>
+                <li>Sélectionner le bus concerné</li>
+                <li>Choisir le type d'intervention (révision, vidange, pneus, etc.)</li>
+                <li>Saisir le coût et la date de l'intervention</li>
+                <li>Saisir la prochaine échéance (kilométrage ou date)</li>
+                <li>Cliquer sur <strong>Enregistrer</strong></li>
+            </ol>
+            <p>L'historique complet des maintenances par bus est visible dans le panneau de maintenance du tableau de bord.</p>
         </div>
 
-        <!-- 7. Optimisation -->
-        <div class="panel" id="s7">
-            <h2><i class="fa-solid fa-gears"></i> 7. Optimisation des tournées</h2>
-            <p>Le moteur d'optimisation fonctionne automatiquement :</p>
+        <!-- 4. Interface Chauffeur -->
+        <div class="panel" id="s4">
+            <h2><i class="fa-solid fa-id-card"></i> 4. Interface Chauffeur</h2>
+            <p>L'interface chauffeur est optimisée pour un usage sur mobile pendant la conduite. Elle affiche une carte avec le trajet à suivre, les arrêts, et les élèves à prendre.</p>
+
+            <!-- 4.1 -->
+            <h3 id="s4-1">4.1 Démarrer la journée</h3>
+            <p><strong>Étapes :</strong></p>
+            <ol>
+                <li>Se connecter avec le code du bus et le mot de passe</li>
+                <li>Autoriser la géolocalisation quand le navigateur le demande</li>
+                <li>L'indicateur GPS passe à <strong>vert</strong> : le suivi est actif</li>
+                <li>Le trajet du jour s'affiche sur la carte avec les arrêts</li>
+            </ol>
+            <div class="tip"><i class="fa-solid fa-lightbulb"></i> L'écran reste actif même en mode veille (anti-verrouillage) pour ne pas interrompre le suivi GPS.</div>
+
+            <!-- 4.2 -->
+            <h3 id="s4-2">4.2 Suivre le trajet sur la carte</h3>
+            <p><strong>Éléments de l'interface :</strong></p>
             <ul>
-                <li>À chaque ajout/modification d'élève, le signal <code>post_save</code> relance le calcul</li>
-                <li>L'algorithme VRP répartit les élèves sur les bus</li>
-                <li>L'ordre des arrêts est calculé par OR-Tools (TSP interne par bus)</li>
-                <li>Les itinéraires routiers réels sont obtenus via OSRM</li>
-                <li>Le résultat est une boucle : <strong>École → arrêts → École</strong></li>
+                <li><strong>Carte</strong> — Le tracé du trajet avec les arrêts et élèves</li>
+                <li><strong>Statistiques</strong> — Nombre d'élèves pris, restants, total</li>
+                <li><strong>Indicateur GPS</strong> — État du signal GPS en temps réel</li>
+                <li><strong>Indicateur de vitesse</strong> — Vitesse actuelle en km/h</li>
+                <li><strong>Guidage vocal</strong> — Activez pour des instructions audio</li>
+                <li><strong>Suivi GPS</strong> — Activez/désactivez le partage de position</li>
             </ul>
-            <div class="tip"><i class="fa-solid fa-lightbulb"></i> Si vous modifiez la position d'un élève, les tournées sont recalculées automatiquement.</div>
+            <p><strong>Activer le guidage vocal :</strong></p>
+            <ol>
+                <li>Cliquer sur le bouton <strong>Activer le guidage vocal</strong></li>
+                <li>Des instructions audio indiquent le prochain arrêt</li>
+                <li>Pour désactiver, cliquer à nouveau sur le bouton</li>
+            </ol>
+
+            <!-- 4.3 -->
+            <h3 id="s4-3">4.3 Prendre un élève (embarquement)</h3>
+            <p>Quand le bus arrive à l'arrêt d'un élève, une modale s'affiche automatiquement :</p>
+            <p><strong>Étapes :</strong></p>
+            <ol>
+                <li>La modale affiche le nom et matricule de l'élève</li>
+                <li>Vérifier visuellement que c'est le bon élève</li>
+                <li>Cliquer sur <strong>PRENDRE L'ÉLÈVE</strong> pour confirmer l'embarquement</li>
+                <li>Le compteur « Pris » s'incrémente, le compteur « Restants » décrémente</li>
+                <li>Si l'élève n'est pas présent, cliquer sur <strong>Annuler</strong></li>
+            </ol>
+            <div class="tip"><i class="fa-solid fa-lightbulb"></i> Le nombre d'élèves pris/restants est mis à jour en temps réel et visible par l'administration et les parents.</div>
+
+            <!-- 4.4 -->
+            <h3 id="s4-4">4.4 Signaler un incident</h3>
+            <p>En cas de problème pendant le trajet, le chauffeur peut signaler un incident :</p>
+            <p><strong>Étapes :</strong></p>
+            <ol>
+                <li>Dans le panneau <strong>Signaler un incident</strong>, choisir le type :
+                    <ul>
+                        <li><strong>Embouteillage</strong> (bouton jaune)</li>
+                        <li><strong>Panne</strong> (bouton rouge)</li>
+                        <li><strong>Accident</strong> (bouton rouge)</li>
+                        <li><strong>Autre</strong> (bouton gris)</li>
+                    </ul>
+                </li>
+                <li>L'incident est enregistré et visible par l'administration</li>
+                <li>L'administration peut résoudre l'incident depuis le tableau de bord</li>
+            </ol>
+
+            <!-- 4.5 -->
+            <h3 id="s4-5">4.5 Mode hors-ligne</h3>
+            <p>Si le chauffeur se retrouve sans connexion internet :</p>
+            <ol>
+                <li>L'indicateur de connectivité passe à <strong>orange (hors-ligne)</strong></li>
+                <li>Le chauffeur peut continuer à marquer les élèves pris normalement</li>
+                <li>Les données sont stockées localement sur l'appareil</li>
+                <li>Dès que la connexion revient, les données sont <strong>synchronisées automatiquement</strong></li>
+                <li>L'indicateur repasse à <strong>vert (en ligne)</strong></li>
+            </ol>
+            <div class="tip"><i class="fa-solid fa-lightbulb"></i> Le mode hors-ligne assure la continuité du service même dans les zones sans réseau.</div>
         </div>
 
-        <!-- 8. GPS -->
-        <div class="panel" id="s8">
-            <h2><i class="fa-solid fa-satellite-dish"></i> 8. Suivi GPS en temps réel</h2>
-            <p>Le suivi GPS permet de :</p>
+        <!-- 5. Interface Parent -->
+        <div class="panel" id="s5">
+            <h2><i class="fa-solid fa-house-user"></i> 5. Interface Parent / Élève</h2>
+            <p>L'interface parent permet de suivre le bus en temps réel, de connaître le statut du ramassage, et de signaler les absences.</p>
+
+            <!-- 5.1 -->
+            <h3 id="s5-1">5.1 Première connexion et configuration</h3>
+            <p><strong>Étapes :</strong></p>
+            <ol>
+                <li>Se connecter avec le matricule de l'élève et le mot de passe</li>
+                <li>Changer le mot de passe (obligatoire à la 1ère connexion)</li>
+                <li>La page de configuration du domicile s'affiche</li>
+                <li>Sur la carte, <strong>cliquer sur votre domicile</strong> pour placer le marqueur<br>
+                    <em>OU</em> cliquer sur <strong>Utiliser ma position GPS</strong> pour auto-détecter</li>
+                <li>Cliquer sur <strong>Enregistrer</strong> pour valider la position</li>
+            </ol>
+            <p>Dès que la position est enregistrée, le système détermine automatiquement le bus le plus proche et l'affecte à l'élève.</p>
+            <div class="warn"><i class="fa-solid fa-triangle-exclamation"></i> L'accès à l'interface parent est bloqué tant que le domicile n'est pas positionné sur la carte.</div>
+
+            <!-- 5.2 -->
+            <h3 id="s5-2">5.2 Suivre le bus en temps réel</h3>
+            <p>Une fois connecté, l'interface parent affiche :</p>
             <ul>
-                <li><strong>Localiser les bus</strong> en temps réel sur la carte</li>
-                <li><strong>Recevoir des alertes</strong> d'excès de vitesse (au-delà de la limite configurée)</li>
-                <li><strong>Estimer les retards</strong> par rapport à l'horaire prévu</li>
-                <li><strong>Rejouer les trajets</strong> passés via le replay GPS</li>
+                <li><strong>Carte</strong> avec le bus en jaune, votre domicile en bleu, et le tracé</li>
+                <li><strong>Statut du trajet</strong> : en route, à l'arrêt, ou en attente</li>
+                <li><strong>Distance restante</strong> entre le bus et votre domicile</li>
+                <li><strong>Nom du chauffeur</strong> et code du bus</li>
             </ul>
-            <p style="margin-top:0.5rem;">La position GPS est envoyée par le chauffeur via l'application mobile ou le formulaire web dédié.</p>
+            <p><strong>Fonctionnalités :</strong></p>
+            <ul>
+                <li>Le bus est <strong>localisé en temps réel</strong> sur la carte</li>
+                <li>Une <strong>notification sonore</strong> se déclenche quand le bus est à 100 m de chez vous</li>
+                <li>Le <strong>statut du ramassage</strong> indique si votre enfant est déjà pris</li>
+                <li>Le <strong>temps d'arrivée estimé</strong> est calculé en fonction de la position actuelle</li>
+            </ul>
+
+            <!-- 5.3 -->
+            <h3 id="s5-3">5.3 Signaler une absence</h3>
+            <p><strong>Étapes :</strong></p>
+            <ol>
+                <li>Sur l'interface parent, cliquer sur <strong>Signaler une absence</strong></li>
+                <li>Le bus ne s'arrêtera pas chez vous aujourd'hui</li>
+                <li>Pour annuler l'absence, cliquer sur <strong>Annuler l'absence</strong></li>
+            </ol>
+            <p>Un élève absent est automatiquement exclu des arrêts du jour : le bus ne s'arrêtera pas à son domicile.</p>
         </div>
 
-        <!-- 9. Chauffeur -->
-        <div class="panel" id="s9">
-            <h2><i class="fa-solid fa-id-card"></i> 9. Interface chauffeur</h2>
-            <p>Le chauffeur dispose d'une interface simplifiée :</p>
+        <!-- 6. Admin générale -->
+        <div class="panel" id="s6">
+            <h2><i class="fa-solid fa-crown"></i> 6. Administration générale (superutilisateur)</h2>
+            <p>L'administration générale gère l'ensemble des écoles inscrites sur la plateforme.</p>
+            <p><strong>Fonctionnalités :</strong></p>
             <ul>
-                <li><strong>Carte du trajet</strong> — L'itinéraire à suivre avec les arrêts</li>
-                <li><strong>Marquage des élèves</strong> — Confirmer la prise en charge de chaque élève</li>
-                <li><strong>Envoi de position</strong> — Mettre à jour la position GPS</li>
-                <li><strong>Signalement d'incident</strong> — Déclarer un problème (panne, accident, etc.)</li>
-                <li><strong>Synchronisation hors-ligne</strong> — Les données accumulées sans connexion sont envoyées automatiquement</li>
-            </ul>
-        </div>
-
-        <!-- 10. Parent -->
-        <div class="panel" id="s10">
-            <h2><i class="fa-solid fa-house-user"></i> 10. Interface parent / élève</h2>
-            <p>L'interface parent permet de :</p>
-            <ul>
-                <li><strong>Suivre le bus</strong> en temps réel sur la carte</li>
-                <li><strong>Voir l'état du ramassage</strong> — Statut du trajet, estimation du temps d'arrivée</li>
-                <li><strong>Signaler une absence</strong> — Le bus ne s'arrêtera pas chez vous</li>
-                <li><strong>Afficher son domicile</strong> sur la carte</li>
-            </ul>
-            <p style="margin-top:0.5rem;">Au premier accès, le parent doit positionner le domicile de l'élève sur la carte (clic ou position GPS).</p>
-            <div class="tip"><i class="fa-solid fa-lightbulb"></i> <strong>Notification :</strong> une alerte est envoyée lorsque le bus est proche du domicile (100 m).</div>
-        </div>
-
-        <!-- 11. Statistiques -->
-        <div class="panel" id="s11">
-            <h2><i class="fa-solid fa-chart-pie"></i> 11. Statistiques</h2>
-            <p>La page statistiques fournit un tableau d'ensemble :</p>
-            <ul>
-                <li>Nombre d'élèves assignés / pris / restants par bus</li>
-                <li>Taux de ramassage par bus</li>
-                <li>Distance totale et durée estimée des tournées</li>
-                <li>Évolution dans le temps</li>
-            </ul>
-        </div>
-
-        <!-- 12. Maintenance -->
-        <div class="panel" id="s12">
-            <h2><i class="fa-solid fa-wrench"></i> 12. Maintenance de la flotte</h2>
-            <p>L'administration peut enregistrer les interventions d'entretien :</p>
-            <ul>
-                <li><strong>Type d'intervention</strong> : révision, changement de pneus, vidange, etc.</li>
-                <li><strong>Coût</strong> et <strong>date</strong> de l'intervention</li>
-                <li><strong>Prochaine échéance</strong> (kilométrage ou date)</li>
-            </ul>
-            <p style="margin-top:0.5rem;">Un historique complet par bus est disponible depuis le tableau de bord.</p>
-        </div>
-
-        <!-- 13. Admin générale -->
-        <div class="panel" id="s13">
-            <h2><i class="fa-solid fa-crown"></i> 13. Administration générale</h2>
-            <p>L'administration générale (superutilisateur) gère l'ensemble des écoles :</p>
-            <ul>
-                <li><strong>Liste des écoles</strong> — Activer / Désactiver</li>
-                <li><strong>Statistiques globales</strong> — Nombre total d'élèves, bus, routes</li>
-                <li><strong>Création d'écoles</strong> — Inscription directe</li>
-                <li><strong>Suppression</strong> — Suppression définitive avec toutes les données</li>
+                <li><strong>Liste des écoles</strong> — Voir toutes les écoles avec leurs statistiques</li>
+                <li><strong>Activer / Désactiver</strong> une école : désactive l'accès pour cette école</li>
+                <li><strong>Statistiques globales</strong> — Nombre total d'élèves, bus, routes, taux de ramassage</li>
+                <li><strong>Création d'écoles</strong> — Inscrire une nouvelle école directement</li>
+                <li><strong>Suppression</strong> — Supprimer une école et toutes ses données</li>
                 <li><strong>Réinitialisation des mots de passe</strong> des comptes école</li>
             </ul>
+            <p><strong>Étapes pour activer/désactiver une école :</strong></p>
+            <ol>
+                <li>Aller dans <strong>Administration générale</strong></li>
+                <li>Trouver l'école dans la liste</li>
+                <li>Cliquer sur le bouton <strong>Activer</strong> ou <strong>Désactiver</strong></li>
+            </ol>
+            <p>Une école désactivée ne peut plus se connecter : les utilisateurs sont déconnectés et redirigés vers la page de connexion.</p>
+        </div>
+
+        <!-- 7. FAQ -->
+        <div class="panel" id="s7">
+            <h2><i class="fa-solid fa-circle-question"></i> 7. FAQ et dépannage</h2>
+
+            <h3>Q : Je ne vois pas de bus sur la carte ?</h3>
+            <p>R : Vérifiez que des bus sont ajoutés et qu'au moins un chauffeur est connecté. Les bus n'apparaissent sur la carte que lorsqu'ils sont en service.</p>
+
+            <h3>Q : Un élève n'est pas affecté à un bus ?</h3>
+            <p>R : L'élève doit avoir une position GPS valide (adresse ou position sur la carte). L'affectation est automatique mais nécessite une position.</p>
+
+            <h3>Q : Le chauffeur n'arrive pas à se connecter ?</h3>
+            <p>R : L'identifiant est le code du bus, le mot de passe par défaut est aussi le code du bus. L'école peut réinitialiser le mot de passe depuis le tableau de bord.</p>
+
+            <h3>Q : Le GPS ne fonctionne pas chez le chauffeur ?</h3>
+            <p>R : Vérifiez que la géolocalisation est autorisée dans le navigateur. Si le problème persiste, essayez de recharger la page.</p>
+
+            <h3>Q : Comment modifier la position du domicile d'un élève ?</h3>
+            <p>R : L'élève/parent doit se connecter et passer par l'interface parent. L'administration ne peut pas modifier la position du domicile directement.</p>
+
+            <h3>Q : Le mode hors-ligne fonctionne-t-il ?</h3>
+            <p>R : Oui. Le chauffeur peut continuer à marquer les élèves pris sans connexion. Les données sont synchronisées automatiquement quand le réseau revient.</p>
+
+            <h3>Q : Comment exporter les données ?</h3>
+            <p>R : Depuis le tableau de bord, les boutons d'export Excel permettent de télécharger la liste des élèves par bus, les feuilles de route, etc.</p>
+
+            <h3>Q : Comment contacter le support ?</h3>
+            <p>R : En cas de problème, contactez l'administration de votre école ou ESTECH directement via le formulaire de contact sur le site.</p>
         </div>
 
         <div style="text-align:center; margin-top:1.5rem;" class="no-print">
@@ -329,7 +494,6 @@
         <footer>© 2026 Scolaloop — Manuel d'utilisation · Développé par <strong>ESTECH</strong></footer>
     </div>
 
-    <!-- Structured Data JSON-LD pour Google -->
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -337,10 +501,7 @@
         "name": "Manuel d'utilisation — Scolaloop",
         "url": "{{ page_url }}",
         "description": "{{ page_description }}",
-        "publisher": {
-            "@type": "Organization",
-            "name": "ESTECH"
-        }
+        "publisher": { "@type": "Organization", "name": "ESTECH" }
     }
     </script>
 </body>
